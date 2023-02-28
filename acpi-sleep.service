@@ -1,0 +1,10 @@
+[Unit]
+Description=Disable ACPI wakeup on USB interfaces' activity
+
+[Service]
+ExecStart=/bin/bash /usr/sbin/acpi-sleep.bash
+RemainAfterExit=true
+Type=oneshot
+
+[Install]
+WantedBy=multi-user.target
