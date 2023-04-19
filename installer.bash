@@ -1,30 +1,33 @@
 #!/bin/bash
 #
+# Filename:     installer.bash#
 # Author:       Alex Portell <https://github.com/portellam>
 # Description:  Disable ACPI wakeup on USB interfaces' activity.
 #
 
 if [[ $( whoami ) != "root" ]]; then
-    echo -e "User is not sudo/root."
+    echo -e "An error occured: User is not sudo/root."
     exit 1
 fi
 
-FILE1="acpi-sleep.bash"
-FILE2="acpi-sleep.service"
-DEST1="/usr/sbin/$FILE1"
-DEST2="/etc/systemd/system/$FILE2"
+_FILE1="acpi-sleep"
+_FILE2="$_FILE1.service"
+_DEST1="/usr/local/bin/$_FILE1"
+_DEST2="/etc/systemd/system/$_FILE2"
 
-if [[ ! -e $FILE1 || ! -e $FILE2 ]]; then
-    echo -e "File(s) missing."
+if [[ ! -e "$_FILE1" ]] \
+    || [[ ! -e "$_FILE2" ]]; then
+    echo -e "An error occured: File(s) missing."
     exit 1
 fi
 
-if ! cp $FILE1 $DEST1 || ! cp $FILE2 $DEST2; then
-    echo -e "Write failure."
+if ! sudo cp "$_FILE1" "$_DEST1" &> /dev/null \
+    || ! sudo cp "$_FILE2" "$_DEST2" &> /dev/null; then
+    echo -e "An error occured: Failed to copy file(s)."
     exit 1
 fi
 
-systemctl enable $FILE2 || exit 1
-systemctl restart $FILE2 || exit 1
-systemctl daemon-reload || exit 1
+sudo systemctl enable "$_FILE2" || exit 1
+sudo systemctl restart "$_FILE2" || exit 1
+sudo systemctl daemon-reload || exit 1
 exit 0
