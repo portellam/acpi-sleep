@@ -2,13 +2,15 @@
 #
 # Filename:     acpi-sleep
 # Author:       Alex Portell <https://github.com/portellam>
-# Description:  Disable ACPI wakeup on USB interfaces' activity.
+# Description:  Disable system (ACPI) wakeup from USB device activity.
 #
 
-_SAVEIFS=$IFS
+SAVEIFS=$IFS
 IFS=$'\n'
-for _LINE in $( cat /proc/acpi/wakeup | grep -i 'enabled' | grep -Ei '*EHC*|*XHC*' | cut -d ' ' -f1 ); do
-    echo "$_LINE" > /proc/acpi/wakeup || exit 1
+
+for LINE in $( cat /proc/acpi/wakeup | grep -i 'enabled' | grep -Ei '*EHC*|*XHC*' | cut -d ' ' -f1 ); do
+  echo "$LINE" > /proc/acpi/wakeup || exit 1
 done
-IFS=$_SAVEIFS
+
+IFS=$SAVEIFS
 exit 0
