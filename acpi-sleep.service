@@ -1,5 +1,5 @@
 [Unit]
-Description=Disable ACPI wakeup on USB interfaces' activity
+Description=Disable system (ACPI) wakeup from USB device activity.
 
 [Service]
 ExecStart=/bin/bash /usr/local/bin/acpi-sleep
