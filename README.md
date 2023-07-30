@@ -1,5 +1,5 @@
 ## Description
-Disable ACPI wakeup on USB interfaces' activity.
+Disable system (ACPI) wakeup from USB device or interface activity.
 
 ## System Requirements
 * Linux
@@ -8,6 +8,11 @@ Disable ACPI wakeup on USB interfaces' activity.
 ## Why?
 * Disable system wakeup (from suspend) whenever a mouse is moved, or keyboard pressed.
 * Limit system wakeup from Power buttons or other interfaces and devices.
+
+## How-to
+### To install:
+
+        sudo bash acpi-sleep.bash
 
 ## Disclaimer
 Should your system not have...
