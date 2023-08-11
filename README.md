@@ -21,5 +21,4 @@ Should your system not have...
 * scheduled wakeup times
 * Remote administration
 * or any other means
-
-Then this script may prevent system resume. Please, assess your system
+Then this script may prevent system resume. Please, assess your system before installation.
