@@ -10,7 +10,8 @@ Disable system (ACPI) wakeup from USB device or interface activity.
 * Limit system wakeup to Power buttons or other interfaces and devices.
 
 ## How-to
-#### To download, execute:
+### To download, execute:
+
         git clone https://github.com/portellam/acpi-sleep
 
 ### To install:
