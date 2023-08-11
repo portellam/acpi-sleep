@@ -6,10 +6,14 @@ Disable system (ACPI) wakeup from USB device or interface activity.
 * systemd
 
 ## Why?
-* Disable system wakeup (from suspend) whenever a mouse is moved, or keyboard pressed.
-* Limit system wakeup from Power buttons or other interfaces and devices.
+* Disable system wakeup (from suspend) whenever a mouse is moved, or key is pressed.
+* Limit system wakeup to Power buttons or other interfaces and devices.
 
 ## How-to
+### To download, execute:
+
+        git clone https://github.com/portellam/acpi-sleep
+
 ### To install:
 
         sudo bash acpi-sleep.bash
@@ -20,8 +24,6 @@ Should your system not have...
 * Wake-on-LAN (with an active Network connection)
 * scheduled wakeup times
 * Remote administration
-* or any other means to resume from system suspend
+* or any other means
 
-Then this script may obfuscate or prevent system resume. Please, assess your system setup, and be careful.
-
-*Why yes this Works on my Machine, how could you tell?*
+Then this script may prevent system resume. Please, evaluate your system before installation.
