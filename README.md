@@ -1,13 +1,12 @@
 ## Description
-Disable system (ACPI) wakeup from USB device or interface activity.
+Install Systemd service to toggle system wakeup (ACPI) from USB device activity. Limit wakeup to Power buttons and/or other devices.
 
 ## System Requirements
 * Linux
 * systemd
 
 ## Why?
-* Disable system wakeup (from suspend) whenever a mouse is moved, or key is pressed.
-* Limit system wakeup to Power buttons or other interfaces and devices.
+As far as I know, I have yet to find a suitable method on the Linux Desktop (KDE Plasma, GNOME, etc.), which allows for toggling wakeup of a system by USB devices. This includes mouse movement, key presses, controller input, etc.
 
 ## How-to
 ### To download, execute:
@@ -16,7 +15,30 @@ Disable system (ACPI) wakeup from USB device or interface activity.
 
 ### To install:
 
-        sudo bash acpi-sleep.bash
+        sudo bash installer.bash
+
+#### Usage:
+
+        Usage: bash installer.bash [OPTION]
+        Set default behavior of acpi-sleep as Systemd service at startup.
+
+          -h, --help    Print this help and exit.
+          -e, --enable  Enable wakeup by USB devices at startup.
+          -d, --dsiable Disable wakeup by USB devices at startup.
+
+### To execute
+
+        sudo bash acpi-sleep
+
+#### Usage:
+
+        Usage: bash acpi-sleep [OPTION]
+        Toggle system wakeup (ACPI) from USB device activity.
+
+          -h, --help    Print this help and exit.
+          -e, --enable  Enable wakeup by USB devices for this session.
+          -d, --disable Disable wakeup by USB devices for this session.
+
 
 ## Disclaimer
 Should your system not have...
