@@ -5,29 +5,15 @@
 # Description:  Install Systemd service to toggle system wakeup (ACPI) from USB device activity.
 #
 
-# <params>
-  SAVEIFS="${IFS}"
-  IFS=$'\n'
-  PREFIX_PROMPT="$( basename "${0}" ): "
-  PREFIX_ERROR="${PREFIX_PROMPT}An error occurred: "
-
-  DESTINATION_BIN_PATH="/usr/local/bin/"
-  DESTINATION_SERVICE_PATH="/etc/systemd/system/"
-  SOURCE_PATH="$( realpath "$( dirname "${0}" )" )/"
-  SOURCE_BIN_FILE="acpi-sleep"
-  SOURCE_SERVICE_FILE1="disable-usb-acpi-wakeup.service"
-  SOURCE_SERVICE_FILE2="enabled-usb-acpi-wakeup.service"
-# </params>
-
 # <traps>
-  trap 'catch' ERR
+  trap 'catch_error' SIGINT SIGTERM ERR
+  trap 'catch_exit' EXIT
 # </traps>
 
-# <functions>
-  # <params>
+# <params>
   OPTIONS=( "$@" )
 
-  SCRIPT_NAME="$( basename "${0}" ): "
+  SCRIPT_NAME="$( basename "${0}" )"
   PREFIX_PROMPT="${SCRIPT_NAME}: "
   PREFIX_ERROR="${PREFIX_PROMPT}An error occurred: "
 
@@ -36,17 +22,25 @@
 
   DO_ENABLE_INTERFACES=false
   DO_DISABLE_INTERFACES=false
-# </params>
 
-# <traps>
-  trap 'catch_error' SIGINT SIGTERM ERR
-  trap 'catch_exit' EXIT
-# </traps>
+  DESTINATION_BIN_PATH="/usr/local/bin/"
+  DESTINATION_SERVICE_PATH="/etc/systemd/system/"
+  SOURCE_PATH="$( realpath "$( dirname "${0}" )" )/"
+  SOURCE_BIN_FILE="acpi-sleep"
+  SOURCE_SERVICE_FILE1="acpi-sleep-allow-usb-wakeup.service"
+  SOURCE_SERVICE_FILE2="acpi-sleep-deny-usb-wakeup.service"
+# </params>
 
 # <functions>
   function main
   {
-    is_user_superuser && parse_options && toggle_wakeup_for_all_interfaces
+    if ! is_user_superuser \
+      || ! parse_options \
+      || ! copy_sources_to_destination \
+      || ! update_systemd; then
+      false
+    fi
+
     exit "${?}"
   }
 
@@ -149,9 +143,10 @@
       local -ar output=(
         "Usage:\tbash ${SCRIPT_NAME} [OPTION]"
         "Toggle system wakeup (ACPI) from USB device activity.\n"
-        "  -h, --help    Print this help and exit."
-        "  -e, --enable  Enable wakeup by USB devices at startup."
         "  -d, --disable Disable wakeup by USB devices at startup."
+        "  -e, --enable  Enable wakeup by USB devices at startup."
+        "  --uninstall   Uninstall all source files from system, and remove related startup services."
+        "  -h, --help    Print this help and exit."
       )
 
       echo -e "${output[*]}"
@@ -187,6 +182,8 @@
 
     function copy_sources_to_destination
     {
+      are_source_files_missing || return 1
+
       if ! sudo cp "${SOURCE_PATH}${SOURCE_BIN_FILE}" "${DESTINATION_BIN_PATH}${SOURCE_BIN_FILE}" &> /dev/null \
         || ( "${DO_DISABLE_INTERFACES}" && ! sudo cp "${SOURCE_PATH}${SOURCE_SERVICE_FILE1}" "${DESTINATION_SERVICE_PATH}${SOURCE_SERVICE_FILE1}" &> /dev/null ) \
         || ( "${DO_ENABLE_INTERFACES}" && ! sudo cp "${SOURCE_PATH}${SOURCE_SERVICE_FILE2}" "${DESTINATION_SERVICE_PATH}${SOURCE_SERVICE_FILE2}" &> /dev/null ); then
@@ -199,14 +196,7 @@
 
     function disable_this_service_file
     {
-      if ! sudo systemctl stop "${1}" &> /dev/null; then
-        print_to_log "${PREFIX_ERROR}Failed to stop service file '${1}'."
-        return 1
-      fi
-
-      print_to_log "${PREFIX_PROMPT}Stopped service file '${1}'."
-
-      if ! systemctl disable "${1}" &> /dev/null; then
+      if ! sudo systemctl disable "${1}" &> /dev/null; then
         print_to_log "${PREFIX_ERROR}Failed to disable service file '${1}'."
         return 1
       fi
@@ -256,10 +246,14 @@
 
       print_to_log "${PREFIX_PROMPT}Enabled service file '${1}'."
 
-      if ! systemctl restart "${1}" &> /dev/null; then
+      if ! sudo systemctl restart "${1}" &> /dev/null; then
         print_to_log "${PREFIX_ERROR}Failed to update service file '${1}'."
         return 1
       fi
 
       print_to_log "${PREFIX_PROMPT}Updated service file '${1}'."
     }
+
+# <code>
+  main
+# </code>
