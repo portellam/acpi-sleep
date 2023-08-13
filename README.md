@@ -6,7 +6,9 @@ Install Systemd service to toggle system wakeup (ACPI) from USB device activity.
 * systemd
 
 ## Why?
-As far as I know, I have yet to find a suitable method on the Linux Desktop (KDE Plasma, GNOME, etc.), which allows for toggling wakeup of a system by USB devices. This includes mouse movement, key presses, controller input, etc.
+Allow or prohibit mouse movement, key presses, controller input, etc., from waking a Linux desktop.
+
+As far as I know, the Linux Desktop Environments (KDE Plasma, GNOME, etc.) do not have any method or guide for this functionality. For example, to achieve the desired result in Windows, open Device Manager > right-click a device > Properties > view the tab for Power Management > Allow this device to wakeup the system.
 
 ## How-to
 ### To download, execute:
@@ -38,7 +40,6 @@ As far as I know, I have yet to find a suitable method on the Linux Desktop (KDE
           -h, --help    Print this help and exit.
           -e, --enable  Enable wakeup by USB devices for this session.
           -d, --disable Disable wakeup by USB devices for this session.
-
 
 ## Disclaimer
 Should your system not have...
