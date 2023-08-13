@@ -1,16 +1,227 @@
-#!/bin/bash
-#
+#!/bin/bash/env bash
+
 # Filename:     acpi-sleep
 # Author:       Alex Portell <https://github.com/portellam>
-# Description:  Disable system (ACPI) wakeup from USB device activity.
+# Description:  Toggle system wakeup (ACPI) from USB device or interface activity.
 #
 
-SAVEIFS=$IFS
-IFS=$'\n'
+# <params>
+  OPTIONS=( "$@" )
 
-for LINE in $( cat /proc/acpi/wakeup | grep -i 'enabled' | grep -Ei '*EHC*|*XHC*' | cut -d ' ' -f1 ); do
-  echo "$LINE" > /proc/acpi/wakeup || exit 1
-done
+  SCRIPT_NAME="$( basename "${0}" ): "
+  PREFIX_PROMPT="${SCRIPT_NAME}: "
+  PREFIX_ERROR="${PREFIX_PROMPT}An error occurred: "
 
-IFS=$SAVEIFS
-exit 0
+  SAVEIFS="${IFS}"
+  IFS=$'\n'
+
+  DO_ENABLE_INTERFACES=false
+  DO_DISABLE_INTERFACES=false
+
+  PATH_TO_FILE="/proc/acpi/wakeup"
+# </params>
+
+# <traps>
+  trap 'catch_error' SIGINT SIGTERM ERR
+  trap 'catch_exit' EXIT
+# </traps>
+
+# <functions>
+  function main
+  {
+    is_user_superuser && parse_options && toggle_wakeup_for_all_interfaces
+    exit "${?}"
+  }
+
+  # <summary>Clean-up</summary>
+    function reset_ifs
+    {
+      IFS="${SAVEIFS}"
+    }
+
+  # <summary>Data-type validation</summary>
+    function is_string
+    {
+      if [[ "${1}" == "" ]]; then
+        return 1
+      fi
+    }
+
+  # <summary>Handlers</summary>
+    function catch_error {
+      exit 255
+    }
+
+    function catch_exit {
+      reset_ifs
+    }
+
+    function is_user_superuser
+    {
+      if [[ $( whoami ) != "root" ]]; then
+        print_to_log "${PREFIX_ERROR}User is not sudo or root."
+        return 1
+      fi
+    }
+
+    function yes_no_prompt
+    {
+      local output="${1}"
+      is_string "${output}" && output+=" "
+
+      for counter in $( seq 0 2 ); do
+        echo -en "${output}[Y/n]: "
+        read -r -p "" answer
+
+        case "${answer}" in
+          [Yy]* )
+            return 0 ;;
+
+          [Nn]* )
+            return 255 ;;
+
+          * )
+            echo "Please answer 'Y' or 'N'." ;;
+        esac
+      done
+
+      return 1
+    }
+
+  # <summary>Loggers</summary>
+    function print_to_log
+    {
+      echo -e "${1}" >&2
+    }
+
+  # <summary>Options logic</summary>
+    function get_option
+    {
+      case "${1}" in
+        "-e" | "--enable" )
+          DO_ENABLE_INTERFACES=true
+          return 0 ;;
+
+        "-d" | "--disable" )
+          DO_DISABLE_INTERFACES=true
+          return 0 ;;
+
+        "" )
+          return 0 ;;
+
+        "-h" | "--help" | * )
+          print_usage
+          return 1 ;;
+      esac
+    }
+
+    function parse_options
+    {
+      if [[ "${#OPTIONS[@]}" -eq 0 ]]; then
+        prompt_option
+        return "${?}"
+      fi
+
+      for option in "${OPTIONS[@]}"; do
+        get_option "${option}" || return 1
+      done
+    }
+
+    function print_usage
+  {
+    local -a output=(
+      "Usage:\tbash ${SCRIPT_NAME} [OPTION]"
+      "Toggle system wakeup (ACPI) from USB device or interface activity.\n"
+      "  -h, --help\tPrint this help and exit."
+      "  -d, --disable\tDisable ACPI wakeup for USB interfaces."
+      "  -e, --enable\tEnable ACPI wakeup for USB interfaces."
+    )
+
+    echo -e "${output[*]}"
+  }
+
+    function prompt_option
+    {
+      yes_no_prompt "Disable ACPI wakeup for USB interfaces?"
+
+      case "${?}" in
+        0 )
+          DO_DISABLE_INTERFACES=true ;;
+
+        255 )
+          DO_ENABLE_INTERFACES=true ;;
+
+        1 )
+          return 1
+      esac
+
+      return 0
+    }
+
+  # <summary>Business logic</summary>
+    function disable_wakeup_for_all_interfaces
+    {
+      local -ar enabled_interfaces_list="$( cat "${PATH_TO_FILE}" | grep --ignore-case 'disabled' | grep --extended-regexp --ignore-case 'EHC|XHC' | awk '{print $1}' | sort --unique )"
+
+      if [[ "${#enabled_interfaces_list[@]}" -le 0 ]] \
+        || ( [[ "${#enabled_interfaces_list[@]}" -eq 1 ]] && [[ "${enabled_interfaces_list[@]}" == "" ]] ); then
+        print_to_log "${PREFIX_PROMPT}No interfaces found." >&2
+        return 0
+      fi
+
+      for line in "${enabled_interfaces_list[@]}"; do
+        is_string "${line}" || continue
+
+        if ! toggle_wakeup_for_this_interface "${line}"; then
+          print_to_log "${PREFIX_ERROR}Failed to disable wakeup for interface '${line}'." >&2
+          return 1
+        fi
+
+        print_to_log "${PREFIX_PROMPT}Disabled wakeup for interface '${line}'." >&2
+      done
+    }
+
+    function enable_wakeup_for_all_interfaces
+    {
+      local -ar disabled_interfaces_list="$( cat "${PATH_TO_FILE}" | grep --ignore-case 'enabled' | grep --extended-regexp --ignore-case 'EHC|XHC' | awk '{print $1}' | sort --unique )"
+
+      if [[ "${#disabled_interfaces_list[@]}" -le 0 ]] \
+        || ( [[ "${#disabled_interfaces_list[@]}" -eq 1 ]] && [[ "${disabled_interfaces_list[@]}" == "" ]] ); then
+        print_to_log "${PREFIX_PROMPT}No interfaces found." >&2
+        return 0
+      fi
+
+      for line in "${disabled_interfaces_list[@]}"; do
+        is_string "${line}" || continue
+
+        if ! toggle_wakeup_for_this_interface "${line}"; then
+          print_to_log "${PREFIX_ERROR}Failed to enable wakeup for interface '${line}'." >&2
+          return 1
+        fi
+
+        print_to_log "${PREFIX_PROMPT}Enabled wakeup for interface '${line}'." >&2
+      done
+    }
+
+    function toggle_wakeup_for_all_interfaces
+    {
+      if "${DO_DISABLE_INTERFACES}" \
+        && ! "${DO_ENABLE_INTERFACES}"; then
+        disable_wakeup_for_all_interfaces
+
+      elif "${DO_ENABLE_INTERFACES}" \
+        && ! "${DO_DISABLE_INTERFACES}"; then
+        enable_wakeup_for_all_interfaces
+
+      else
+        print_to_log "Invalid input."
+      fi
+    }
+
+    function toggle_wakeup_for_this_interface
+    {
+      echo "${line}" > /proc/acpi/wakeup
+    }
+# </functions>
+
+main
