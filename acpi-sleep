@@ -20,8 +20,8 @@
   SAVEIFS="${IFS}"
   IFS=$'\n'
 
-  DO_ENABLE_INTERFACES=false
   DO_DISABLE_INTERFACES=false
+  DO_ENABLE_INTERFACES=false
 
   PATH_TO_FILE="/proc/acpi/wakeup"
 # </params>
