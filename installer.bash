@@ -20,8 +20,9 @@
   SAVEIFS="${IFS}"
   IFS=$'\n'
 
-  DO_ENABLE_INTERFACES=false
   DO_DISABLE_INTERFACES=false
+  DO_ENABLE_INTERFACES=false
+  DO_UNINSTALL=false
 
   DESTINATION_BIN_PATH="/usr/local/bin/"
   DESTINATION_SERVICE_PATH="/etc/systemd/system/"
@@ -36,8 +37,8 @@
   {
     if ! is_user_superuser \
       || ! parse_options \
-      || ! copy_sources_to_destination \
-      || ! update_systemd; then
+      || ! execute_install \
+      || ! execute_uninstall; then
       false
     fi
 
@@ -117,6 +118,9 @@
           DO_DISABLE_INTERFACES=true
           return 0 ;;
 
+        "--uninstall" )
+          DO_UNINSTALL=true ;;
+
         "" )
           return 0 ;;
 
@@ -129,7 +133,7 @@
     function parse_options
     {
       if [[ "${#OPTIONS[@]}" -eq 0 ]]; then
-        prompt_option
+        prompt_options
         return "${?}"
       fi
 
@@ -152,9 +156,23 @@
       echo -e "${output[*]}"
     }
 
-    function prompt_option
+    function prompt_options
     {
-      yes_no_prompt "Disable ACPI wakeup for USB interfaces at startup?"
+      if ! "${DO_UNINSTALL}"; then
+        yes_no_prompt "Install?"
+      fi
+
+      case "${?}" in
+        255 )
+          DO_UNINSTALL=true ;;
+
+        1 )
+          return 1
+      esac
+
+      if ! "${DO_UNINSTALL}"; then
+        yes_no_prompt "Disable ACPI wakeup for USB interfaces at startup?"
+      fi
 
       case "${?}" in
         0 )
@@ -171,88 +189,137 @@
     }
 
   # <summary>Business logic</summary>
-    function are_source_files_missing
-    {
-      if ! is_file "${SOURCE_BIN_FILE}" \
-        || ! is_file "${SOURCE_SERVICE_FILE1}"; then
-        print_to_log "${PREFIX_ERROR}Source file(s) missing."
-        return 1
-      fi
+    # <summary>Install</summary>
+      function execute_install
+      {
+        if "${DO_UNINSTALL}"; then
+          return 1
+        fi
+
+        if ! copy_sources_to_destination \
+          || ! update_services_for_install; then
+          print_to_log "${PREFIX_ERROR}Install failed."
+          exit 1
+        fi
+      }
+
+      function are_source_files_missing
+      {
+        if ! is_file "${SOURCE_PATH}${SOURCE_BIN_FILE}" \
+          || ! is_file "${SOURCE_PATH}${SOURCE_SERVICE_FILE1}"; then
+          print_to_log "${PREFIX_ERROR}Source file(s) missing."
+          return 1
+        fi
+      }
+
+      function copy_sources_to_destination
+      {
+        are_source_files_missing || return 1
+
+        if ! sudo cp --force "${SOURCE_PATH}${SOURCE_BIN_FILE}" "${DESTINATION_BIN_PATH}${SOURCE_BIN_FILE}" &> /dev/null \
+          || ( "${DO_DISABLE_INTERFACES}" && ! sudo cp --force "${SOURCE_PATH}${SOURCE_SERVICE_FILE1}" "${DESTINATION_SERVICE_PATH}${SOURCE_SERVICE_FILE1}" &> /dev/null ) \
+          || ( "${DO_ENABLE_INTERFACES}" && ! sudo cp --force "${SOURCE_PATH}${SOURCE_SERVICE_FILE2}" "${DESTINATION_SERVICE_PATH}${SOURCE_SERVICE_FILE2}" &> /dev/null ); then
+          print_to_log "${PREFIX_ERROR}Failed to copy source file(s) to destination."
+          return 1
+        fi
+
+        print_to_log "${PREFIX_PROMPT}Copied source file(s) to destination."
+      }
+
+      function update_services_for_install
+      {
+        if ( "${DO_DISABLE_INTERFACES}" && ! update_this_service_file "${SOURCE_SERVICE_FILE1}" ) \
+          || ( "${DO_ENABLE_INTERFACES}" && ! update_this_service_file "${SOURCE_SERVICE_FILE2}" ); then
+          return 1
+        fi
+
+        if ( "${DO_DISABLE_INTERFACES}" && ! disable_this_service_file "${SOURCE_SERVICE_FILE2}" ) \
+          || ( "${DO_ENABLE_INTERFACES}" && ! disable_this_service_file "${SOURCE_SERVICE_FILE1}" ); then
+          return 1
+        fi
+
+        refresh_services
+      }
+
+    # <summary>Shared logic</summary>
+      function disable_this_service_file
+      {
+        if ! sudo systemctl disable "${1}" &> /dev/null; then
+          print_to_log "${PREFIX_ERROR}Failed to disable service file '${1}'."
+          return 1
+        fi
+
+        print_to_log "${PREFIX_PROMPT}Disabled service file '${1}'."
+      }
+
+      function is_file
+      {
+        if [[ ! -e "${1}" ]]; then
+          print_to_log "${PREFIX_ERROR}File '${1}' not found."
+          return 1
+        fi
+      }
+
+      function refresh_services
+      {
+        if ! sudo systemctl daemon-reload; then
+          print_to_log "${PREFIX_ERROR}Failed to reload Systemd."
+          return 1
+        fi
+
+        print_to_log "${PREFIX_PROMPT}Reloaded Systemd."
+      }
+
+      function update_this_service_file
+      {
+        if ! sudo systemctl enable "${1}" &> /dev/null; then
+          print_to_log "${PREFIX_ERROR}Failed to enable service file '${1}'."
+          return 1
+        fi
+
+        print_to_log "${PREFIX_PROMPT}Enabled service file '${1}'."
+
+        if ! sudo systemctl restart "${1}" &> /dev/null; then
+          print_to_log "${PREFIX_ERROR}Failed to update service file '${1}'."
+          return 1
+        fi
+
+        print_to_log "${PREFIX_PROMPT}Updated service file '${1}'."
     }
 
-    function copy_sources_to_destination
-    {
-      are_source_files_missing || return 1
+     # <summary>Uninstall<summary>
+      function execute_uninstall
+      {
+        if ! "${DO_UNINSTALL}"; then
+          return 1
+        fi
 
-      if ! sudo cp "${SOURCE_PATH}${SOURCE_BIN_FILE}" "${DESTINATION_BIN_PATH}${SOURCE_BIN_FILE}" &> /dev/null \
-        || ( "${DO_DISABLE_INTERFACES}" && ! sudo cp "${SOURCE_PATH}${SOURCE_SERVICE_FILE1}" "${DESTINATION_SERVICE_PATH}${SOURCE_SERVICE_FILE1}" &> /dev/null ) \
-        || ( "${DO_ENABLE_INTERFACES}" && ! sudo cp "${SOURCE_PATH}${SOURCE_SERVICE_FILE2}" "${DESTINATION_SERVICE_PATH}${SOURCE_SERVICE_FILE2}" &> /dev/null ); then
-        print_to_log "${PREFIX_ERROR}Failed to copy source file(s) to destination."
-        return 1
-      fi
+        if ! remove_destination_files \
+          || ! update_services_for_uninstall; then
+          print_to_log "${PREFIX_ERROR}Uninstall failed."
+          exit 1
+        fi
+      }
 
-      print_to_log "${PREFIX_PROMPT}Copied source file(s) to destination."
-    }
+      function remove_destination_files
+      {
+        if ( is_file "${DESTINATION_BIN_PATH}${SOURCE_BIN_FILE}" &> /dev/null && ! sudo rm --force "${DESTINATION_BIN_PATH}${SOURCE_BIN_FILE}" &> /dev/null ) \
+          || ( is_file "${DESTINATION_SERVICE_PATH}${SOURCE_SERVICE_FILE1}" &> /dev/null && ! sudo rm --force "${DESTINATION_SERVICE_PATH}${SOURCE_SERVICE_FILE1}" &> /dev/null ) \
+          || ( is_file "${DESTINATION_SERVICE_PATH}${SOURCE_SERVICE_FILE2}" &> /dev/null && ! sudo rm --force "${DESTINATION_SERVICE_PATH}${SOURCE_SERVICE_FILE2}" &> /dev/null ); then
+          print_to_log "${PREFIX_ERROR}Failed to delete destination file(s)."
+          return 1
+        fi
+      }
 
-    function disable_this_service_file
-    {
-      if ! sudo systemctl disable "${1}" &> /dev/null; then
-        print_to_log "${PREFIX_ERROR}Failed to disable service file '${1}'."
-        return 1
-      fi
+      function update_services_for_uninstall
+      {
+        if ! disable_this_service_file "${SOURCE_SERVICE_FILE2}"\
+          || ! disable_this_service_file "${SOURCE_SERVICE_FILE1}"; then
+          return 1
+        fi
 
-      print_to_log "${PREFIX_PROMPT}Disabled service file '${1}'."
-    }
-
-    function is_file
-    {
-      if [[ ! -e "${1}" ]]; then
-        print_to_log "${PREFIX_ERROR}File '${1}' not found."
-        return 1
-      fi
-    }
-
-    function refresh_services
-    {
-      if ! sudo systemctl daemon-reload; then
-        print_to_log "${PREFIX_ERROR}Failed to reload Systemd."
-        return 1
-      fi
-
-      print_to_log "${PREFIX_PROMPT}Reloaded Systemd."
-    }
-
-    function update_systemd
-    {
-      if ( "${DO_DISABLE_INTERFACES}" && ! update_this_service_file "${SOURCE_SERVICE_FILE1}" ) \
-        || ( "${DO_ENABLE_INTERFACES}" && ! update_this_service_file "${SOURCE_SERVICE_FILE2}" ); then
-        return 1
-      fi
-
-      if ( "${DO_DISABLE_INTERFACES}" && ! disable_this_service_file "${SOURCE_SERVICE_FILE2}" ) \
-        || ( "${DO_ENABLE_INTERFACES}" && ! disable_this_service_file "${SOURCE_SERVICE_FILE1}" ); then
-        return 1
-      fi
-
-      refresh_services
-    }
-
-    function update_this_service_file
-    {
-      if ! sudo systemctl enable "${1}" &> /dev/null; then
-        print_to_log "${PREFIX_ERROR}Failed to enable service file '${1}'."
-        return 1
-      fi
-
-      print_to_log "${PREFIX_PROMPT}Enabled service file '${1}'."
-
-      if ! sudo systemctl restart "${1}" &> /dev/null; then
-        print_to_log "${PREFIX_ERROR}Failed to update service file '${1}'."
-        return 1
-      fi
-
-      print_to_log "${PREFIX_PROMPT}Updated service file '${1}'."
-    }
+        refresh_services
+      }
 
 # <code>
   main
