@@ -1,0 +1,10 @@
+[Unit]
+Description=Disable system wakeup (ACPI) by USB devices at startup.
+
+[Service]
+ExecStart=/bin/bash /usr/local/bin/acpi-sleep --disable
+RemainAfterExit=true
+Type=oneshot
+
+[Install]
+WantedBy=multi-user.target
