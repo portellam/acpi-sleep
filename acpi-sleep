@@ -128,17 +128,17 @@
     }
 
     function print_usage
-  {
-    local -a output=(
-      "Usage:\tbash ${SCRIPT_NAME} [OPTION]"
-      "Toggle system wakeup (ACPI) from USB device or interface activity.\n"
-      "  -h, --help\tPrint this help and exit."
-      "  -d, --disable\tDisable ACPI wakeup for USB interfaces."
-      "  -e, --enable\tEnable ACPI wakeup for USB interfaces."
-    )
+    {
+      local -ar output=(
+        "Usage:\tbash ${SCRIPT_NAME} [OPTION]"
+        "Toggle system wakeup (ACPI) from USB device activity.\n"
+        "  -h, --help    Print this help and exit."
+        "  -e, --enable  Enable wakeup by USB devices for this session only."
+        "  -d, --disable Disable wakeup by USB devices for this session only."
+      )
 
-    echo -e "${output[*]}"
-  }
+      echo -e "${output[*]}"
+    }
 
     function prompt_option
     {
