@@ -5,6 +5,11 @@
 # Description:  Toggle system wakeup (ACPI) from USB device or interface activity.
 #
 
+# <traps>
+  trap 'catch_error' SIGINT SIGTERM ERR
+  trap 'catch_exit' EXIT
+# </traps>
+
 # <params>
   OPTIONS=( "$@" )
 
@@ -20,11 +25,6 @@
 
   PATH_TO_FILE="/proc/acpi/wakeup"
 # </params>
-
-# <traps>
-  trap 'catch_error' SIGINT SIGTERM ERR
-  trap 'catch_exit' EXIT
-# </traps>
 
 # <functions>
   function main
@@ -132,9 +132,9 @@
       local -ar output=(
         "Usage:\tbash ${SCRIPT_NAME} [OPTION]"
         "Toggle system wakeup (ACPI) from USB device activity.\n"
-        "  -h, --help    Print this help and exit."
-        "  -e, --enable  Enable wakeup by USB devices for this session only."
         "  -d, --disable Disable wakeup by USB devices for this session only."
+        "  -e, --enable  Enable wakeup by USB devices for this session only."
+        "  -h, --help    Print this help and exit."
       )
 
       echo -e "${output[*]}"
@@ -224,4 +224,6 @@
     }
 # </functions>
 
-main
+# <code>
+  main
+# </code>
