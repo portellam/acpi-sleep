@@ -22,6 +22,7 @@
 
   DO_DISABLE_INTERFACES=false
   DO_ENABLE_INTERFACES=false
+  DO_INSTALL=false
   DO_UNINSTALL=false
 
   DESTINATION_BIN_PATH="/usr/local/bin/"
@@ -37,10 +38,17 @@
   {
     if ! is_user_superuser \
       || ! parse_options \
-      || ! execute_install \
-      || ! execute_uninstall; then
-      false
+      || ! prompt_options; then
+      exit 1
     fi
+
+    case true in
+      "${DO_INSTALL}" )
+        execute_install ;;
+
+      "${DO_UNINSTALL}" )
+        execute_uninstall ;;
+    esac
 
     exit "${?}"
   }
@@ -61,17 +69,19 @@
 
   # <summary>Handlers</summary>
     function catch_error {
+      echo error
       exit 255
     }
 
     function catch_exit {
+      echo exit
       reset_ifs
     }
 
     function is_user_superuser
     {
       if [[ $( whoami ) != "root" ]]; then
-        print_to_log "${PREFIX_ERROR}User is not sudo or root."
+        print_to_error_log "User is not sudo or root."
         return 1
       fi
     }
@@ -101,9 +111,14 @@
     }
 
   # <summary>Loggers</summary>
-    function print_to_log
+    function print_to_error_log
     {
-      echo -e "${1}" >&2
+      echo -e "${PREFIX_ERROR}${1}" >&2
+    }
+
+    function print_to_output_log
+    {
+      echo -e "${PREFIX_PROMPT}${1}" >&1
     }
 
   # <summary>Options logic</summary>
@@ -112,10 +127,12 @@
       case "${1}" in
         "-e" | "--enable" )
           DO_ENABLE_INTERFACES=true
+          DO_INSTALL=true
           return 0 ;;
 
         "-d" | "--disable" )
           DO_DISABLE_INTERFACES=true
+          DO_INSTALL=true
           return 0 ;;
 
         "--uninstall" )
@@ -132,11 +149,6 @@
 
     function parse_options
     {
-      if [[ "${#OPTIONS[@]}" -eq 0 ]]; then
-        prompt_options
-        return "${?}"
-      fi
-
       for option in "${OPTIONS[@]}"; do
         get_option "${option}" || return 1
       done
@@ -158,56 +170,81 @@
 
     function prompt_options
     {
-      if ! "${DO_UNINSTALL}"; then
-        yes_no_prompt "Install?"
+      if ! prompt_install \
+        || ! prompt_disable; then
+        return 1
+      fi
+    }
+
+    function prompt_disable
+    {
+      if "${DO_UNINSTALL}" \
+        || ( "${DO_INSTALL}" \
+          && ( "${DO_DISABLE_INTERFACES}" || "${DO_ENABLE_INTERFACES}" ) ); then
+        return 0
       fi
 
-      case "${?}" in
-        255 )
-          DO_UNINSTALL=true ;;
-
-        1 )
-          return 1
-      esac
-
-      if ! "${DO_UNINSTALL}"; then
-        yes_no_prompt "Disable ACPI wakeup for USB interfaces at startup?"
-      fi
+      yes_no_prompt "Disable ACPI wakeup for USB interfaces at startup?"
 
       case "${?}" in
         0 )
           DO_DISABLE_INTERFACES=true ;;
 
+        1 )
+          exit 1 ;;
+
         255 )
           DO_ENABLE_INTERFACES=true ;;
-
-        1 )
-          return 1
       esac
 
       return 0
     }
 
+    function prompt_install
+    {
+      if "${DO_INSTALL}" \
+        || "${DO_UNINSTALL}" \
+        || "${DO_DISABLE_INTERFACES}" \
+        || "${DO_ENABLE_INTERFACES}"; then
+        return 0
+      fi
+
+      yes_no_prompt "Install?"
+
+      case "${?}" in
+        0 )
+          DO_INSTALL=true ;;
+
+        1 )
+          exit 1 ;;
+
+        255 )
+          DO_UNINSTALL=true ;;
+      esac
+
+      return 0
+    }
+
+
   # <summary>Business logic</summary>
     # <summary>Install</summary>
       function execute_install
       {
-        if "${DO_UNINSTALL}"; then
-          return 1
-        fi
-
-        if ! copy_sources_to_destination \
+        if ( ! "${DO_DISABLE_INTERFACES}" && ! "${DO_ENABLE_INTERFACES}" ) \
+          || ! copy_sources_to_destination \
           || ! update_services_for_install; then
-          print_to_log "${PREFIX_ERROR}Install failed."
+          print_to_error_log "Install failed."
           exit 1
         fi
+
+        print_to_output_log "Install successful."
       }
 
       function are_source_files_missing
       {
         if ! is_file "${SOURCE_PATH}${SOURCE_BIN_FILE}" \
           || ! is_file "${SOURCE_PATH}${SOURCE_SERVICE_FILE1}"; then
-          print_to_log "${PREFIX_ERROR}Source file(s) missing."
+          print_to_error_log "Source file(s) missing."
           return 1
         fi
       }
@@ -219,22 +256,24 @@
         if ! sudo cp --force "${SOURCE_PATH}${SOURCE_BIN_FILE}" "${DESTINATION_BIN_PATH}${SOURCE_BIN_FILE}" &> /dev/null \
           || ( "${DO_DISABLE_INTERFACES}" && ! sudo cp --force "${SOURCE_PATH}${SOURCE_SERVICE_FILE1}" "${DESTINATION_SERVICE_PATH}${SOURCE_SERVICE_FILE1}" &> /dev/null ) \
           || ( "${DO_ENABLE_INTERFACES}" && ! sudo cp --force "${SOURCE_PATH}${SOURCE_SERVICE_FILE2}" "${DESTINATION_SERVICE_PATH}${SOURCE_SERVICE_FILE2}" &> /dev/null ); then
-          print_to_log "${PREFIX_ERROR}Failed to copy source file(s) to destination."
+          print_to_error_log "Failed to copy source file(s) to destination."
           return 1
         fi
 
-        print_to_log "${PREFIX_PROMPT}Copied source file(s) to destination."
+        print_to_output_log "Copied source file(s) to destination."
       }
 
       function update_services_for_install
       {
-        if ( "${DO_DISABLE_INTERFACES}" && ! update_this_service_file "${SOURCE_SERVICE_FILE1}" ) \
-          || ( "${DO_ENABLE_INTERFACES}" && ! update_this_service_file "${SOURCE_SERVICE_FILE2}" ); then
+        if ( "${DO_DISABLE_INTERFACES}" \
+            && ( ! enable_this_service "${SOURCE_SERVICE_FILE1}" || ! start_this_service "${SOURCE_SERVICE_FILE1}" ) ) \
+          || ( "${DO_ENABLE_INTERFACES}" \
+            && ( ! enable_this_service "${SOURCE_SERVICE_FILE2}" || ! start_this_service "${SOURCE_SERVICE_FILE2}" ) ); then
           return 1
         fi
 
-        if ( "${DO_DISABLE_INTERFACES}" && ! disable_this_service_file "${SOURCE_SERVICE_FILE2}" ) \
-          || ( "${DO_ENABLE_INTERFACES}" && ! disable_this_service_file "${SOURCE_SERVICE_FILE1}" ); then
+        if ( "${DO_ENABLE_INTERFACES}" && ! terminate_this_service "${SOURCE_SERVICE_FILE1}" ) \
+          || ( "${DO_DISABLE_INTERFACES}" && ! terminate_this_service "${SOURCE_SERVICE_FILE2}" ); then
           return 1
         fi
 
@@ -242,20 +281,30 @@
       }
 
     # <summary>Shared logic</summary>
-      function disable_this_service_file
+      function disable_this_service
       {
         if ! sudo systemctl disable "${1}" &> /dev/null; then
-          print_to_log "${PREFIX_ERROR}Failed to disable service file '${1}'."
+          print_to_error_log "Failed to disable '${1}'."
           return 1
         fi
 
-        print_to_log "${PREFIX_PROMPT}Disabled service file '${1}'."
+        print_to_output_log "Disabled service '${1}'."
+      }
+
+      function enable_this_service
+      {
+        if ! sudo systemctl enable "${1}" &> /dev/null; then
+          print_to_error_log "Failed to enable '${1}'."
+          return 1
+        fi
+
+        print_to_output_log "Enabled '${1}'."
       }
 
       function is_file
       {
         if [[ ! -e "${1}" ]]; then
-          print_to_log "${PREFIX_ERROR}File '${1}' not found."
+          print_to_error_log "File '${1}' not found."
           return 1
         fi
       }
@@ -263,42 +312,51 @@
       function refresh_services
       {
         if ! sudo systemctl daemon-reload; then
-          print_to_log "${PREFIX_ERROR}Failed to reload Systemd."
+          print_to_error_log "Failed to reload services."
           return 1
         fi
 
-        print_to_log "${PREFIX_PROMPT}Reloaded Systemd."
+        print_to_output_log "Reloaded services."
       }
 
-      function update_this_service_file
+      function start_this_service
       {
-        if ! sudo systemctl enable "${1}" &> /dev/null; then
-          print_to_log "${PREFIX_ERROR}Failed to enable service file '${1}'."
+        if ! sudo systemctl start "${1}" &> /dev/null; then
+          print_to_error_log "Failed to start '${1}'."
           return 1
         fi
 
-        print_to_log "${PREFIX_PROMPT}Enabled service file '${1}'."
+        print_to_output_log "Started service '${1}'."
+      }
 
-        if ! sudo systemctl restart "${1}" &> /dev/null; then
-          print_to_log "${PREFIX_ERROR}Failed to update service file '${1}'."
+      function stop_this_service
+      {
+        if ! sudo systemctl stop "${1}" &> /dev/null; then
+          print_to_error_log "Failed to stop '${1}'."
           return 1
         fi
 
-        print_to_log "${PREFIX_PROMPT}Updated service file '${1}'."
-    }
+        print_to_output_log "Stopped service '${1}'."
+      }
+
+      function terminate_this_service
+      {
+        if is_file "${DESTINATION_SERVICE_PATH}${1}" &> /dev/null \
+            && ( ! stop_this_service "${1}" || ! disable_this_service "${1}" ); then
+          return 1
+        fi
+      }
 
      # <summary>Uninstall<summary>
       function execute_uninstall
       {
-        if ! "${DO_UNINSTALL}"; then
-          return 1
-        fi
-
         if ! remove_destination_files \
           || ! update_services_for_uninstall; then
-          print_to_log "${PREFIX_ERROR}Uninstall failed."
+          print_to_error_log "Uninstall failed."
           exit 1
         fi
+
+        print_to_output_log "Uninstall successful."
       }
 
       function remove_destination_files
@@ -306,15 +364,17 @@
         if ( is_file "${DESTINATION_BIN_PATH}${SOURCE_BIN_FILE}" &> /dev/null && ! sudo rm --force "${DESTINATION_BIN_PATH}${SOURCE_BIN_FILE}" &> /dev/null ) \
           || ( is_file "${DESTINATION_SERVICE_PATH}${SOURCE_SERVICE_FILE1}" &> /dev/null && ! sudo rm --force "${DESTINATION_SERVICE_PATH}${SOURCE_SERVICE_FILE1}" &> /dev/null ) \
           || ( is_file "${DESTINATION_SERVICE_PATH}${SOURCE_SERVICE_FILE2}" &> /dev/null && ! sudo rm --force "${DESTINATION_SERVICE_PATH}${SOURCE_SERVICE_FILE2}" &> /dev/null ); then
-          print_to_log "${PREFIX_ERROR}Failed to delete destination file(s)."
+          print_to_error_log "Failed to delete destination file(s)."
           return 1
         fi
+
+        print_to_output_log "Deleted destination file(s)."
       }
 
       function update_services_for_uninstall
       {
-        if ! disable_this_service_file "${SOURCE_SERVICE_FILE2}"\
-          || ! disable_this_service_file "${SOURCE_SERVICE_FILE1}"; then
+        if ! terminate_this_service "${SOURCE_SERVICE_FILE1}" \
+          || ! terminate_this_service "${SOURCE_SERVICE_FILE2}"; then
           return 1
         fi
 
