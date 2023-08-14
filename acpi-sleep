@@ -13,7 +13,7 @@
 # <params>
   OPTIONS=( "$@" )
 
-  SCRIPT_NAME="$( basename "${0}" ): "
+  SCRIPT_NAME="$( basename "${0}" )"
   PREFIX_PROMPT="${SCRIPT_NAME}: "
   PREFIX_ERROR="${PREFIX_PROMPT}An error occurred: "
 
@@ -59,7 +59,7 @@
     function is_user_superuser
     {
       if [[ $( whoami ) != "root" ]]; then
-        print_to_log "${PREFIX_ERROR}User is not sudo or root."
+        print_to_error_log "User is not sudo or root."
         return 1
       fi
     }
@@ -89,9 +89,14 @@
     }
 
   # <summary>Loggers</summary>
-    function print_to_log
+    function print_to_error_log
     {
-      echo -e "${1}" >&2
+      echo -e "${PREFIX_ERROR}${1}" >&2
+    }
+
+    function print_to_output_log
+    {
+      echo -e "${PREFIX_PROMPT}${1}" >&1
     }
 
   # <summary>Options logic</summary>
@@ -165,7 +170,7 @@
 
       if [[ "${#enabled_interfaces_list[@]}" -le 0 ]] \
         || ( [[ "${#enabled_interfaces_list[@]}" -eq 1 ]] && [[ "${enabled_interfaces_list[@]}" == "" ]] ); then
-        print_to_log "${PREFIX_PROMPT}No interfaces found." >&2
+        print_to_output_log "No interfaces found."
         return 0
       fi
 
@@ -173,11 +178,11 @@
         is_string "${line}" || continue
 
         if ! toggle_wakeup_for_this_interface "${line}"; then
-          print_to_log "${PREFIX_ERROR}Failed to disable wakeup for interface '${line}'." >&2
+          print_to_error_log "Failed to disable wakeup for interface '${line}'."
           return 1
         fi
 
-        print_to_log "${PREFIX_PROMPT}Disabled wakeup for interface '${line}'." >&2
+        print_to_output_log "Disabled wakeup for interface '${line}'."
       done
     }
 
@@ -187,7 +192,7 @@
 
       if [[ "${#disabled_interfaces_list[@]}" -le 0 ]] \
         || ( [[ "${#disabled_interfaces_list[@]}" -eq 1 ]] && [[ "${disabled_interfaces_list[@]}" == "" ]] ); then
-        print_to_log "${PREFIX_PROMPT}No interfaces found." >&2
+        print_to_output_log "No interfaces found."
         return 0
       fi
 
@@ -195,11 +200,11 @@
         is_string "${line}" || continue
 
         if ! toggle_wakeup_for_this_interface "${line}"; then
-          print_to_log "${PREFIX_ERROR}Failed to enable wakeup for interface '${line}'." >&2
+          print_to_error_log "Failed to enable wakeup for interface '${line}'."
           return 1
         fi
 
-        print_to_log "${PREFIX_PROMPT}Enabled wakeup for interface '${line}'." >&2
+        print_to_output_log "Enabled wakeup for interface '${line}'."
       done
     }
 
@@ -214,7 +219,7 @@
         enable_wakeup_for_all_interfaces
 
       else
-        print_to_log "Invalid input."
+        print_to_error_log "Invalid input."
       fi
     }
 
