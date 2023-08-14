@@ -69,12 +69,10 @@
 
   # <summary>Handlers</summary>
     function catch_error {
-      echo error
       exit 255
     }
 
     function catch_exit {
-      echo exit
       reset_ifs
     }
 
