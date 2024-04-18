@@ -1,5 +1,5 @@
 [Unit]
-Description=Enable system wakeup (ACPI) by USB devices at startup.
+Description=Enable ACPI Wakeup
 
 [Service]
 ExecStart=/bin/bash /usr/local/bin/acpi-sleep --enable
