@@ -3,6 +3,7 @@
 # Filename:     installer.bash
 # Author:       Alex Portell <https://github.com/portellam>
 # Description:  Install Systemd service to toggle system wakeup (ACPI) from USB device activity.
+# Version:      1.0.0
 #
 
 # <traps>
@@ -13,9 +14,10 @@
 # <params>
   OPTIONS=( "$@" )
 
-  SCRIPT_NAME="$( basename "${0}" )"
-  PREFIX_PROMPT="${SCRIPT_NAME}: "
-  PREFIX_ERROR="${PREFIX_PROMPT}An error occurred: "
+  declare -r SCRIPT_VERSION="1.0.0"
+  declare -r SCRIPT_NAME="$( basename "${0}" )"
+  declare -r PREFIX_PROMPT="${SCRIPT_NAME}: "
+  declare -r PREFIX_ERROR="An error occurred:${RESET_COLOR} "
 
   SAVEIFS="${IFS}"
   IFS=$'\n'
@@ -156,7 +158,8 @@
     {
       local -ar output=(
         "Usage:\tbash ${SCRIPT_NAME} [OPTION]"
-        "Toggle system wakeup (ACPI) from USB device activity.\n"
+        "Toggle wakeup by ACPI of a Linux machine from USB device activity."
+        "Version ${SCRIPT_VERSION}.\n"
         "  -d, --disable Disable wakeup by USB devices at startup."
         "  -e, --enable  Enable wakeup by USB devices at startup."
         "  --uninstall   Uninstall all source files from system, and remove related startup services."
