@@ -2,7 +2,7 @@
 ### v1.0.0
 Toggle wakeup by ACPI of a Linux machine from USB device activity. Limit wakeup to Power buttons and/or other devices. `systemd` service.
 
-**[Latest release](https://github.com/portellam/acpi-sleep/releases/latest) | [View master branch...](https://github.com/portellam/acpi-sleep/tree/master)**
+**[Latest release](https://github.com/portellam/acpi-sleep/releases/latest) | [View develop branch...](https://github.com/portellam/acpi-sleep/tree/develop)**
 
 ## Table of Contents
 - [Why?](#why)
