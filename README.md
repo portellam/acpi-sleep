@@ -10,7 +10,7 @@ Toggle wakeup by ACPI of a Linux machine from USB device activity. Limit wakeup 
 - [Host Requirements](#host-requirements)
 - [Usage](#usage)
   - [1. `installer.bash`](#1-installerbash)
-  - [2. `acpi-sleep`](#2-auto-xorg)
+  - [2. `acpi-sleep`](#2-acpi-sleep)
 - [Disclaimer](#disclaimer)
 - [Contact](#contact)
 
