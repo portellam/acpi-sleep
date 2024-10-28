@@ -48,3 +48,40 @@ for index in $( \
             "s/^pci://"
       )
 done
+
+prefix="/sys/bus/usb/devices/"
+suffix="/power/wakeup"
+path="${prefix}*${suffix}"
+prefix="${prefix//\//\\/}"
+suffix="${suffix//\//\\/}"
+state="enabled"
+state_suffix=":${state}"
+
+for line in $( \
+  grep \
+    . \
+    ${path} \
+  | grep \
+    "${state}"
+); do
+  path="$( \
+    echo \
+      "${line}" \
+    | sed \
+      --expression \
+        "s/${state_suffix}$//"
+  )"
+
+  bus="$( \
+    echo \
+      "${line}" \
+    | sed \
+      --expression \
+        "s/^${prefix}//" \
+      --expression \
+        "s/${suffix}${state_suffix}$//"
+  )"
+
+  echo \
+  "${bus}"
+done
