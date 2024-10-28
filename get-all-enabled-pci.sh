@@ -14,20 +14,37 @@ for index in $( \
         --lines \
     )
 ); do
+  line="$( \
+    cat \
+      /proc/acpi/wakeup \
+    | grep \
+      enabled \
+    | sed \
+      --quiet \
+      "${index}p"
+  )"
+
+  name="$( \
+    echo \
+      "${line}" \
+    | awk \
+      'END {print $1}'
+  )"
+
+  echo \
+    -e \
+    -n \
+    "${name}\t"
+
   lspci \
     -s \
       $( \
-        cat \
-          /proc/acpi/wakeup \
-        | grep \
-          enabled \
-        | sed \
-          --quiet \
-          "${index}p" \
+        echo \
+          "${line}" \
         | awk \
           'END {print $4}' \
         | sed \
-          --expression
+          --expression \
             "s/^pci://"
       )
 done
