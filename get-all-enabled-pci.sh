@@ -1,7 +1,25 @@
 #!/bin/bash
 
+message="\tNo devices found."
+
 function get_pci_devices
 {
+  state="${1}"
+
+  if [[ "${state}" == "enabled" ]]; then
+    echo \
+      -e \
+      "List of PCI devices which can wake the system:"
+
+  elif [[ "${state}" == "disabled" ]]; then
+    echo \
+      -e \
+      "List of PCI devices which cannot wake the system:"
+
+  else
+    return 1
+  fi
+
   path="/proc/acpi/wakeup"
   index_count="$( \
     cat \
@@ -68,10 +86,28 @@ function get_pci_devices
       -e \
       "${message}"
   fi
+
+  echo
 }
 
 function get_usb_devices
 {
+  state="${1}"
+
+  if [[ "${state}" == "enabled" ]]; then
+    echo \
+      -e \
+      "List of USB devices which can wake the system:"
+
+  elif [[ "${state}" == "disabled" ]]; then
+    echo \
+      -e \
+      "List of USB devices which cannot wake the system:"
+
+  else
+    return 1
+  fi
+
   prefix="/sys/bus/usb/devices/"
   suffix="/power/wakeup"
   path="${prefix}*${suffix}"
@@ -160,33 +196,44 @@ function get_usb_devices
       -e \
       "${message}"
   fi
+
+  echo
 }
 
-state="enabled"
-message="\tNo devices found."
+function disable_pci_device_state
+{
+  if ! $( grep \
+      ${path} \
+    | grep \
+      "disabled"
+  ); then
+    return 1
+  fi
 
-echo \
-  -e \
-  "List of PCI devices which can wake the system:"
+  toggle_pci_device_state
+  return "${?}"
+}
 
-get_pci_devices
+function enable_pci_device_state
+{
+  if ! $( grep \
+      ${path} \
+    | grep \
+      "enabled"
+  ); then
+    return 1
+  fi
 
-echo \
-  -e \
-  "\nList of USB devices which can wake the system:"
+  toggle_pci_device_state
+  return "${?}"
+}
 
-get_usb_devices
+function toggle_pci_device_state
+{
+  echo "${name}" > "${path}"
+}
 
-state="disabled"
-
-echo \
-  -e \
-  "\nList of PCI devices which cannot wake the system:"
-
-get_pci_devices
-
-echo \
-  -e \
-  "\nList of USB devices which cannot wake the system:"
-
-get_usb_devices
+get_pci_devices "enabled"
+get_usb_devices "enabled"
+get_pci_devices "disabled"
+get_usb_devices "disabled"
