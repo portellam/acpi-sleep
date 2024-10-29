@@ -2,23 +2,28 @@
 
 # get all PCI devices which wakeup the PC.
 
+echo "List of PCI devices which can wake the system:"
+
+path="/proc/acpi/wakeup"
+state="enabled"
+
 for index in $( \
   seq \
     1 \
     $( \
       cat \
-        /proc/acpi/wakeup \
+        "${path}" \
       | grep \
-        enabled \
+        "${state}" \
       | wc \
         --lines \
     )
 ); do
   line="$( \
     cat \
-      /proc/acpi/wakeup \
+      "${path}" \
     | grep \
-      enabled \
+      "${state}" \
     | sed \
       --quiet \
       "${index}p"
@@ -34,7 +39,7 @@ for index in $( \
   echo \
     -e \
     -n \
-    "${name}\t"
+    "\t${name}\t"
 
   lspci \
     -s \
@@ -47,41 +52,93 @@ for index in $( \
           --expression \
             "s/^pci://"
       )
-done
+done \
+| sort \
+  --version-sort
+
+# get all USB devices which wakeup the PC.
+echo
+echo "List of USB devices which can wake the system:"
 
 prefix="/sys/bus/usb/devices/"
 suffix="/power/wakeup"
 path="${prefix}*${suffix}"
 prefix="${prefix//\//\\/}"
 suffix="${suffix//\//\\/}"
-state="enabled"
 state_suffix=":${state}"
 
-for line in $( \
+id_list=()
+
+for line_list in $( \
   grep \
     . \
     ${path} \
   | grep \
     "${state}"
 ); do
-  path="$( \
-    echo \
-      "${line}" \
-    | sed \
-      --expression \
-        "s/${state_suffix}$//"
-  )"
+  for line in "${line_list[@]}"; do
+    path="$( \
+      echo \
+        "${line}" \
+      | sed \
+        --expression \
+          "s/${state_suffix}$//"
+    )"
 
+    id="$( \
+      echo \
+        "${line}" \
+      | sed \
+        --expression \
+          "s/^${prefix}//" \
+        --expression \
+          "s/${suffix}${state_suffix}$//"
+    )"
+
+    id_list+=( "${id}" )
+  done
+done
+
+for id in ${id_list[@]}; do
   bus="$( \
     echo \
-      "${line}" \
-    | sed \
-      --expression \
-        "s/^${prefix}//" \
-      --expression \
-        "s/${suffix}${state_suffix}$//"
+      "${id}" \
+    | cut \
+      --delimiter \
+        "-" \
+      --fields \
+        1
   )"
 
+  device="$( \
+    echo \
+      "${id}" \
+    | cut \
+      --delimiter \
+        "-" \
+      --fields \
+        2 \
+    | cut \
+      --delimiter \
+        "." \
+      --fields \
+        1
+  )"
+
+  output="$( \
+    lsusb \
+      -s \
+        "${bus}:${device}"
+  )"
+
+  if [[ "${output}" == "" ]]; then
+    continue
+  fi
+
   echo \
-  "${bus}"
-done
+    -e \
+    -n \
+    "\t${output}\n"
+done \
+| sort \
+  --version-sort
