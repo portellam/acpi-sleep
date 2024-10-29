@@ -167,7 +167,7 @@ message="\tNo devices found."
 
 echo \
   -e \
-  "\nList of PCI devices which can wake the system:"
+  "List of PCI devices which can wake the system:"
 
 get_pci_devices
 
