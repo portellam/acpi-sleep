@@ -4,20 +4,22 @@
 
 echo "List of PCI devices which can wake the system:"
 
+message="\tNo devices found."
 path="/proc/acpi/wakeup"
 state="enabled"
+index_count="$( \
+  cat \
+    "${path}" \
+  | grep \
+    "${state}" \
+  | wc \
+    --lines
+)"
 
 for index in $( \
   seq \
     1 \
-    $( \
-      cat \
-        "${path}" \
-      | grep \
-        "${state}" \
-      | wc \
-        --lines \
-    )
+    "${index_count}"
 ); do
   line="$( \
     cat \
@@ -56,6 +58,12 @@ done \
 | sort \
   --version-sort
 
+if [[ "${index_count}" -eq 0 ]]; then
+  echo \
+    -e \
+    "${message}"
+fi
+
 # get all USB devices which wakeup the PC.
 echo
 echo "List of USB devices which can wake the system:"
@@ -84,6 +92,8 @@ for line_list in $( \
         --expression \
           "s/${state_suffix}$//"
     )"
+
+    echo disabled > "${path}"
 
     id="$( \
       echo \
@@ -142,3 +152,9 @@ for id in ${id_list[@]}; do
 done \
 | sort \
   --version-sort
+
+if [[ "${id_list[@]}" -eq 0 ]]; then
+  echo \
+    -e \
+    "${message}"
+fi
