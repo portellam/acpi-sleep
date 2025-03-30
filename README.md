@@ -104,7 +104,7 @@ then this script may prevent system resume.
 Please, evaluate your system before installation.
 
 ### 6. Contact
-Wish to recommend a project? Do you need help? Please visit the [Issues][61] page.
+Do you need help? Please visit the [Issues][61] page.
 
 [61]: https://github.com/portellam/acpi-sleep/issues
 ##
