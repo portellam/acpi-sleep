@@ -3,7 +3,7 @@
 Toggle wakeup by ACPI of a Linux machine from USB device activity. Limit wakeup to Power buttons and/or other devices. `systemd` service.
 
 ## [Download](#2-download)
-#### View this repository on [Codeberg][01], [GitHub][02].
+#### View this repository on [Codeberg][01] or [GitHub][02].
 [01]: https://codeberg.org/portellam/acpi-sleep
 [02]: https://github.com/portellam/acpi-sleep
 ##
@@ -25,7 +25,7 @@ Allow or deny mouse movement, key presses, controller input, etc., from waking a
 As far as I know, the Linux desktop environments (KDE Plasma, GNOME, etc.) do not have any method or guide for this functionality. However, this is accessible to desktop users in [Microsoft Windows](https://web.archive.org/web/20230603175452/https://www.tenforums.com/tutorials/63148-allow-prevent-devices-wake-computer-windows-10-a.html).
 
 ### 2. Download
-- Download the Latest Release:&ensp;[Codeberg][51], [GitHub][52]
+- Download the Latest Release:&ensp;[Codeberg][51] or [GitHub][52].
 
 - Download the `.zip` file:
     1. Viewing from the top of the repository's (current) webpage, click the
