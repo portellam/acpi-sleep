@@ -32,14 +32,14 @@ Limit wake-up to Power buttons and/or other devices.
 ### ❓ 1. Why?
 
 By default, some Linux distributions do not have easy access to toggle which
-**Advanced Configuration and Power Interface (ACPI)** devices may wake-up the
-Host machine; unlike in Microsoft Windows, there is no easy
-method to do so.
+**Advanced Configuration and Power Interface (ACPI)** <sup>\[1\]</sup>](#1)
+devices may wake-up the Host machine; *unlike in Microsoft Windows, there is no*
+*easy method to do so.* <sup>\[2\]</sup>](#2)
 
 **What does *ACPI Sleep* do?** A script to blacklist/whitelist specified devices
-and/or device groups from ACPI wake-up of the Host; easily allow or deny mouse
-movement, key presses, controller input, etc. from disturbing the sleep of a
-Host machine.
+and/or device groups from ACPI wake-up of the Host; *easily allow or deny mouse*
+*movement, key presses, controller input, etc. from disturbing the sleep of a*
+*Host machine.*
 
 ### 💾 2. Download
 
@@ -186,17 +186,17 @@ To open a CLI or Terminal:
 ```
 
 ### ⚠️ 5. Disclaimer
-Default behavior of a system is to allow system wakeup by USB. Therefore, installing the Systemd service to enable wakeup by USB, is not necessary.
+Default behavior of a Host machine is to allow system wakeup by USB. Therefore,
+installing *ACPI Sleep* to enable wake-up of devices, *is not necessary.*
 
-Should your system not have...
-- a Power button
-- Wake-on-LAN (with an active Network connection)
-- scheduled wakeup times
-- Remote administration
+**Should your system not have...**
+- a Power button.
+- Wake-on-LAN (with an active Network connection).
+- scheduled wakeup times.
+- Remote administration.
 - etc.
 
-then this script may prevent system resume.
-Please, evaluate your system before installation.
+*...then this script may prevent system resume. Please, evaluate your system before installation.*
 
 ### ☎️ 6. Contact
 Do you need help? Please visit the [Issues][61] page.
