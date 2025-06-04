@@ -1,7 +1,7 @@
 <img align="left" height="100" alt="I SLEEP" src="./media/i-sleep.png" style="border: 2px solid black;"/>
 <br>
 
-# ACPI Sleep
+# 💤 ACPI Sleep
 
 ### v1.1.0
 
@@ -229,4 +229,4 @@ Accessed June 4, 2025.
 
 ##
 
-#### Click [here](#acpi-sleep) to return to the top of this document.
+#### Click [here](#-acpi-sleep) to return to the top of this document.
