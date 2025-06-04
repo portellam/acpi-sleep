@@ -136,12 +136,13 @@ To open a CLI or Terminal:
 
 #### 4.4. `acpi-sleep`
 
-- From any folder execute: `sudo bash acpi-sleep [OPTION]`
+- From any folder execute: `sudo acpi-sleep [OPTION]`
   - The CLI's shell (bash) should recognize that the script file is located in
     `/usr/local/bin`.
 
 ```
   -h, --help              Print this help and exit.
+
   -s, --save              Save changes so they persist after restart of the Host
                           machine.
 
@@ -199,7 +200,8 @@ installing *ACPI Sleep* to enable wake-up of devices, *is not necessary.*
 - Remote administration.
 - etc.
 
-*...then this script may prevent system resume. Please, evaluate your system before installation.*
+*...then this script may prevent system resume. Please evaluate your system*
+*before installation.*
 
 ### ☎️ 6. Contact
 Do you need help? Please visit the [Issues][61] page.
