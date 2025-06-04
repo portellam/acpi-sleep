@@ -32,9 +32,9 @@ Limit wake-up to Power buttons and/or other devices.
 ### ❓ 1. Why?
 
 By default, some Linux distributions do not have easy access to toggle which
-**Advanced Configuration and Power Interface (ACPI)** <sup>\[1\]</sup>](#1)
+**Advanced Configuration and Power Interface (ACPI)** [<sup>\[1\]</sup>](#1)
 devices may wake-up the Host machine; *unlike in Microsoft Windows, there is no*
-*easy method to do so.* <sup>\[2\]</sup>](#2)
+*easy method to do so.* [<sup>\[2\]</sup>](#2)
 
 **What does *ACPI Sleep* do?** A script to blacklist/whitelist specified devices
 and/or device groups from ACPI wake-up of the Host; *easily allow or deny mouse*
