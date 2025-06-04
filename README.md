@@ -20,7 +20,7 @@ Limit wake-up to Power buttons and/or other devices.
 ## Table of Contents
 - [❓ 1. Why?](#-1-why)
 - [💾 2. Download](#-2-download)
-- [✅ 3. Host Requirements](#-3-host-requirements)
+- [✅ 3. Requirements](#-host-requirements)
 - [❓ 4. Usage](#-4-usage)
   - [4.1. The Command Interface (CLI) or Terminal](#41-the-command-interface-cli-or-terminal)
   - [4.2. Verify Installer is Executable](#42-verify-script-is-executable)
