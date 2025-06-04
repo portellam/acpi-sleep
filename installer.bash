@@ -1,18 +1,20 @@
 #!/bin/bash/env bash
 
-# Filename:     installer.bash
-# Author:       Alex Portell <https://github.com/portellam>
-# Description:  Install Systemd service to toggle system wakeup (ACPI) from USB
-#               device activity.
-# Version:      1.0.1
+# Filename:       installer.bash
+# Description:    Installs ACPI Sleep.
+# Author(s):      Alex Portell <github.com/portellam>
+# Maintainer(s):  Alex Portell <github.com/portellam>
+# Version:        1.1.0
 #
 
-#region traps
+#region Traps
+
 trap 'catch_error' SIGINT SIGTERM ERR
 trap 'catch_exit' EXIT
+
 #endregion
 
-#region parameters
+#region Parameters
 
 OPTIONS=( "$@" )
 
@@ -38,7 +40,7 @@ SOURCE_SERVICE_FILE2="acpi-sleep-deny-usb-wakeup.service"
 
 #endregion
 
-#region logic
+#region Logic
 
 function main
 {
@@ -418,6 +420,8 @@ function main
 
 #endregion
 
-#region main
-main
+#region Main
+
+main "${@}"
+
 #endregion

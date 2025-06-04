@@ -1,19 +1,22 @@
-#!/bin/bash/env bash
+#!/bin/bash
 
-# Filename:     acpi-sleep
-# Author:       Alex Portell <https://github.com/portellam>
-# Description:  Toggle system wakeup (ACPI) from USB device or interface activity.
-# Version:      1.0.1
+# Filename:       acpi-sleep
+# Description:    Allow or deny device(s) to wake-up a Linux machine from a
+#                 suspended state. Limit wake-up to Power buttons and/or other
+#                 devices.
+# Author(s):      Alex Portell <github.com/portellam>
+# Maintainer(s):  Alex Portell <github.com/portellam>
+# Version:        1.1.0
 #
 
-#region traps
+#region Traps
 
 trap 'catch_error' SIGINT SIGTERM ERR
 trap 'catch_exit' EXIT
 
 #endregion
 
-#region parameters
+#region Parameters
 
 OPTIONS=( "$@" )
 
@@ -32,12 +35,12 @@ PATH_TO_FILE="/proc/acpi/wakeup"
 
 #endregion
 
-#region logic
+#region Logic
 
 function main
 {
-is_user_superuser && parse_options && toggle_wakeup_for_all_interfaces
-exit "${?}"
+  is_user_superuser && parse_options && toggle_wakeup_for_all_interfaces
+  exit "${?}"
 }
 
   #region Clean-up
@@ -50,6 +53,7 @@ exit "${?}"
   #endregion
 
   #region Data-type validation
+
   function is_string
   {
     if [[ "${1}" == "" ]]; then
@@ -257,8 +261,8 @@ function yes_no_prompt
 
 #endregion
 
-#region main
+#region Main
 
-main
+main "${@}"
 
 #endregion
