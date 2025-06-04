@@ -94,8 +94,8 @@ and/or device groups from ACPI wake-up of the Host; *easily allow or deny mouse*
 ### ✅ 3. Host Requirements
 
 - **Operating System (OS):**
-  - Linux.
-  - *BSD is not supported*.
+  - **Linux.**
+  - ***BSD*** *is not supported*.
 
 - `systemd` for system services.
 
@@ -193,13 +193,13 @@ To open a CLI or Terminal:
 ```
 
 ### ⚠️ 5. Disclaimer
-Default behavior of a Host machine is to allow system wakeup by USB. Therefore,
+Default behavior of a Host machine is to allow system wake-up by USB. Therefore,
 installing *ACPI Sleep* to enable wake-up of devices, *is not necessary.*
 
 **Should your system not have...**
 - a Power button.
 - Wake-on-LAN (with an active Network connection).
-- scheduled wakeup times.
+- scheduled wake-up times.
 - Remote administration.
 - etc.
 
@@ -222,7 +222,7 @@ Do you need help? Please visit the [Issues][61] page.
 
 #### 2.
 
-&nbsp;&nbsp;** How to Allow or Prevent Devices to Wake Computer in Windows 10**. TenForums.
+&nbsp;&nbsp;**How to Allow or Prevent Devices to Wake Computer in Windows 10**. TenForums.
 Accessed June 4, 2025.
 
 &nbsp;&nbsp;&nbsp;&nbsp;<sup>https://web.archive.org/web/20230603175452/https://www.tenforums.com/tutorials/63148-allow-prevent-devices-wake-computer-windows-10-a.html.</sup>
