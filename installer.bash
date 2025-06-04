@@ -1,4 +1,4 @@
-#!/bin/bash/env bash
+#!/bin/bash
 
 # Filename:       installer.bash
 # Description:    Installs ACPI Sleep.
