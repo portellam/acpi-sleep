@@ -76,7 +76,7 @@ Host machine.
 
 - Clone the repository:
 
-  1. [Open the CLI](#61-the-command-interface-cli-or-terminal).
+  1. [Open the CLI](#41-the-command-interface-cli-or-terminal).
 
   2. Change your directory to your home folder or anywhere safe:
      - `cd ~`
@@ -130,42 +130,6 @@ To open a CLI or Terminal:
 ```
   -h, --help        Print this help and exit.
   -u, --uninstall   Uninstall all source files from system, and remove related startup services.
-
-  -b, --blacklist MATCH   Blacklist individual devices and/or PCI devices
-                          manually.
-                          MATCH is a comma delimited list of keywords, PCI device
-                          IDs, and/or IOMMU groups (groups of PCI devices).
-                          Keywords include individual or PCI device names and
-                          types; PCI device IDs are colon delimited pairs of
-                          four-character alphanumeric words; IOMMU groups are
-                          positive numbers.
-  --blacklist-all         Blacklist all individual devices and PCI devices.
-  --blacklist-kbm         Blacklist all individual keyboard-and-mouse (KBM)
-                          devices.
-  --blacklist-pci         Blacklist all PCI device groups.
-  --blacklist-usb         Blacklist all individual USB devices and USB PCI devices
-                          (USB controllers).
-  --blacklist-non-kbm     Blacklist all individual non-KBM devices.
-
-  -w, --whitelist MATCH   Whitelist individual devices and/or PCI devices
-                          manually.
-                          MATCH is a comma delimited list of keywords, PCI device
-                          IDs, and/or IOMMU groups (groups of PCI devices).
-                          Keywords include individual or PCI device names and
-                          types; PCI device IDs are colon delimited pairs of
-                          four-character alphanumeric words; IOMMU groups are
-                          positive numbers.
-  --whitelist-all         Whitelist all individual devices and PCI devices.
-  --whitelist-kbm         Whitelist all individual keyboard-and-mouse (KBM)
-                          devices.
-  --whitelist-pci         Whitelist all PCI device groups.
-  --whitelist-usb         Whitelist all individual USB devices and USB PCI devices
-                          (USB controllers).
-  --whitelist-non-kbm     Whitelist all individual non-KBM devices.
-
-
-  -s, --save              Save changes so they persist after restart of the Host
-                          machine.
 ```
 
 #### 4.4. `acpi-sleep`
@@ -175,6 +139,8 @@ To open a CLI or Terminal:
 
 ```
   -h, --help              Print this help and exit.
+  -s, --save              Save changes so they persist after restart of the Host
+                          machine.
 
   -b, --blacklist MATCH   Blacklist individual devices and/or PCI devices
                           manually.
@@ -184,12 +150,17 @@ To open a CLI or Terminal:
                           types; PCI device IDs are colon delimited pairs of
                           four-character alphanumeric words; IOMMU groups are
                           positive numbers.
+
   --blacklist-all         Blacklist all individual devices and PCI devices.
+
   --blacklist-kbm         Blacklist all individual keyboard-and-mouse (KBM)
                           devices.
+
   --blacklist-pci         Blacklist all PCI device groups.
+
   --blacklist-usb         Blacklist all individual USB devices and USB PCI devices
                           (USB controllers).
+
   --blacklist-non-kbm     Blacklist all individual non-KBM devices.
 
   -w, --whitelist MATCH   Whitelist individual devices and/or PCI devices
@@ -200,17 +171,18 @@ To open a CLI or Terminal:
                           types; PCI device IDs are colon delimited pairs of
                           four-character alphanumeric words; IOMMU groups are
                           positive numbers.
+
   --whitelist-all         Whitelist all individual devices and PCI devices.
+
   --whitelist-kbm         Whitelist all individual keyboard-and-mouse (KBM)
                           devices.
+
   --whitelist-pci         Whitelist all PCI device groups.
+
   --whitelist-usb         Whitelist all individual USB devices and USB PCI devices
                           (USB controllers).
+
   --whitelist-non-kbm     Whitelist all individual non-KBM devices.
-
-
-  -s, --save              Save changes so they persist after restart of the Host
-                          machine.
 ```
 
 ### ⚠️ 5. Disclaimer
