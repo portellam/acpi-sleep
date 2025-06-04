@@ -125,17 +125,20 @@ To open a CLI or Terminal:
 
 #### 4.3. `installer.bash`
 
-- **To install,** execute from within the project folder: `sudo bash installer.bash`
+- **To install,** execute from within the project folder:
+  `sudo bash installer.bash`
 
 ```
   -h, --help        Print this help and exit.
-  -u, --uninstall   Uninstall all source files from system, and remove related startup services.
+  -u, --uninstall   Uninstall all source files from system, and remove related
+                    startup services.
 ```
 
 #### 4.4. `acpi-sleep`
 
 - From any folder execute: `sudo bash acpi-sleep [OPTION]`
-  - The CLI's shell (bash) should recognize that the script file is located in `/usr/local/bin`.
+  - The CLI's shell (bash) should recognize that the script file is located in
+    `/usr/local/bin`.
 
 ```
   -h, --help              Print this help and exit.
