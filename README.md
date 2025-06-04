@@ -19,8 +19,8 @@ Limit wake-up to Power buttons and/or other devices.
 
 ## Table of Contents
 - [❓ 1. Why?](#-1-why)
-- [💾 2. Download](#-2-download)
-- [✅ 3. Requirements](#-host-requirements)
+- [✅ 2. Requirements](#-2-requirements)
+- [💾 3. Download](#-3-download)
 - [❓ 4. Usage](#-4-usage)
   - [4.1. The Command Interface (CLI) or Terminal](#41-the-command-interface-cli-or-terminal)
   - [4.2. Verify Installer is Executable](#42-verify-script-is-executable)
@@ -44,9 +44,17 @@ and/or device groups from ACPI wake-up of the Host; *easily allow or deny mouse*
 *movement, key presses, controller input, etc. from disturbing the sleep of a*
 *Host machine.*
 
-### 💾 2. Download
+### ✅ 2. Requirements
 
-- Download the Latest Release: [Codeberg][21], [GitHub][22]
+- **Operating System (OS):**
+  - **Linux.**
+  - ***BSD*** *is not supported*.
+
+- `systemd` for system services.
+
+### 💾 3. Download
+
+- Download the Latest Release: [Codeberg][31], [GitHub][32]
 
 - Download the `.zip` file:
 
@@ -88,16 +96,8 @@ and/or device groups from ACPI wake-up of the Host; *easily allow or deny mouse*
      - `git clone https://www.codeberg.org/portellam/acpi-sleep`
      - `git clone https://www.github.com/portellam/acpi-sleep`
 
-[21]: https://codeberg.org/portellam/acpi-sleep/releases/latest
-[22]: https://github.com/portellam/acpi-sleep/releases/latest
-
-### ✅ 3. Host Requirements
-
-- **Operating System (OS):**
-  - **Linux.**
-  - ***BSD*** *is not supported*.
-
-- `systemd` for system services.
+[31]: https://codeberg.org/portellam/acpi-sleep/releases/latest
+[32]: https://github.com/portellam/acpi-sleep/releases/latest
 
 ### ❓ 4. Usage
 
@@ -193,6 +193,7 @@ To open a CLI or Terminal:
 ```
 
 ### ⚠️ 5. Disclaimer
+
 Default behavior of a Host machine is to allow system wake-up by USB. Therefore,
 installing *ACPI Sleep* to enable wake-up of devices, *is not necessary.*
 
@@ -207,6 +208,7 @@ installing *ACPI Sleep* to enable wake-up of devices, *is not necessary.*
 *before installation.*
 
 ### ☎️ 6. Contact
+
 Do you need help? Please visit the [Issues][61] page.
 
 [61]: https://github.com/portellam/acpi-sleep/issues
