@@ -1,6 +1,6 @@
 # ACPI Sleep
 
-### v1.0.1
+### v1.1.0
 
 Allow or deny device(s) to wake-up a Linux machine from a suspended state.
 Limit wake-up to Power buttons and/or other devices.
@@ -25,7 +25,7 @@ Limit wake-up to Power buttons and/or other devices.
   - [4.4. `acpi-sleep`](#44-acpi-sleep)
 - [⚠️ 5. Disclaimer](#-5-disclaimer)
 - [☎️ 6. Contact](#-6-contact)
-- [🌐 6. References](#-7-references)
+- [🌐 7. References](#-7-references)
 
 ## Contents
 
