@@ -1,4 +1,4 @@
-<img align="left"  alt="I SLEEP" src="./media/i-sleep.jpg" style="border: 2px solid black;"/>
+<img align="left"  alt="I SLEEP" src="./media/i-sleep.png" style="border: 2px solid black;"/>
 <br>
 
 # ACPI Sleep
