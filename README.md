@@ -1,7 +1,7 @@
-<img align="left" height="150" alt="I SLEEP" src="./media/i-sleep.png" style="border: 2px solid black;"/>
+<img align="left" height="125" alt="I SLEEP" src="./media/i-sleep.png" style="border: 2px solid black;"/>
 <br>
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;💤
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;💤
 
 # ACPI Sleep
 
