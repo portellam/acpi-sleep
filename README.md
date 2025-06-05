@@ -1,4 +1,4 @@
-<img align="left" height="100" alt="I SLEEP" src="./media/i-sleep.png" style="border: 2px solid black;"/>
+<img align="left" height="100" alt="I SLEEP" src="./media/i-sleep.png"/>
 <br>
 
 # ACPI Sleep
@@ -24,8 +24,8 @@ Limit wake-up to Power buttons and/or other devices.
 - [❓ 4. Usage](#-4-usage)
   - [4.1. The Command Interface (CLI) or Terminal](#41-the-command-interface-cli-or-terminal)
   - [4.2. Verify Installer is Executable](#42-verify-script-is-executable)
-  - [4.3. `installer.bash`](#43-installerbash)
-  - [4.4. `acpi-sleep`](#44-acpi-sleep)
+  - [4.3. Installer](#43-installer)
+  - [4.4. Executable](#44-executable)
 - [⚠️ 5. Disclaimer](#-5-disclaimer)
 - [☎️ 6. Contact](#-6-contact)
 - [🌐 7. References](#-7-references)
@@ -126,7 +126,7 @@ To open a CLI or Terminal:
    - Do **not** make any non-script file executable. This is not necessary and
      potentially dangerous.
 
-#### 4.3. `installer.bash`
+#### 4.3. Installer
 
 - **To install,** execute from within the project folder:
   `sudo bash installer.bash`
@@ -137,7 +137,7 @@ To open a CLI or Terminal:
                     startup services.
 ```
 
-#### 4.4. `acpi-sleep`
+#### 4.4. Executable
 
 - From any folder execute: `sudo acpi-sleep [OPTION]`
   - The CLI's shell (bash) should recognize that the script file is located in
