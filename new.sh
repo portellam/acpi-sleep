@@ -9,35 +9,29 @@
 path="/proc/acpi/wakeup"
 
 echo -e \
-  "$( \
-    cat "${path}" \
-      | head --lines 1
-  )\t\tDescription"
+  "$( head --lines 1 "${path}" )\t\tDescription"
 
 for line in \
-  "$( \
-    cat "${path}" \
-      | tail -n +2 \
-      | grep "pci:" \
-  )"; do
-
+$( \
+  grep "pci:" "${path}" \
+    | tail -n +2\
+); do
   pci="$( \
     echo "${line}" \
-      | awk 'END {print $4}' \
-      | sed \
-        --expression "s/^pci://"
+      | awk '{print $4}' \
+      | sed 's/^pci://' \
   )"
 
   description=$( \
     lspci \
-      -s "${pci}"
+      -s "${pci}"\
   )
 
-  if [[ "${description}// " == "" ]]; then
+  if [[ -z "${description// }" ]]; then
     description="N/A"
   fi
 
-  echo -e -n "${line}\t${description}"
+  echo -e "${line}\t${description}"
 done
 
 echo
