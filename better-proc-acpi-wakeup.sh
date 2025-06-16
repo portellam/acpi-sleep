@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Filename:     new.sh
+# Filename:     better-proc-acpi-wakeup
 # Author:       Alex Portell <https://github.com/portellam>
 # Description:  WIP
 # Version:      1.0.0
