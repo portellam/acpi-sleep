@@ -634,17 +634,17 @@ function yes_no_prompt
       "$( \
         printf "%s%s%s\n" \
           "Usage: sudo ${SCRIPT_NAME} [OPTION]..." \
-          "\n" \
+          " " \
           "Allow or deny device(s) to wake-up a Linux machine from a suspended" \
-            "state. Limit wake-up to matched input devices" \
-            "(power, PCI, Plug-and-Play (PnP), FireWire, USB, etc.)." \
+            " state. Limit wake-up to matched input devices" \
+            " (power, PCI, Plug-and-Play (PnP), FireWire, USB, etc.)." \
           "" \
           "Version ${SCRIPT_VERSION}." \
           "\n\n" \
           "\t-h, --help\t\tPrint this help and exit." \
           "\n" \
-          "\n" \
           "\t--pci MATCH\t\tGet PCI devices and the ACPI wake status of each." \
+          "" \
           "\t\t\t\t" \
           "STATUS is the state of matched devices. STATUS may be either \"enabled\"," \
           " \"disabled\", or empty (match all)." \
@@ -657,7 +657,9 @@ function yes_no_prompt
           "\n" \
           "\t-s, --save\t\tSave changes so they persist after restart of the Host" \
             " machine." \
-          "\n" \
+          ""
+
+        printf "%s%s%s\n" \
           "\t-b|--blacklist MATCH\tBlacklist individual devices and/or PCI devices" \
             " manually." \
           ""\
@@ -668,17 +670,15 @@ function yes_no_prompt
             " four-character alphanumeric words; IOMMU groups are positive numbers." \
           "\n" \
           "\t--blacklist-all\t\tBlacklist all individual devices and PCI devices." \
-          "" \
-          "\t--blacklist-kbm\t\tBlacklist all individual keyboard-and-mouse (KBM)" \
+          "\n\t--blacklist-kbm\t\tBlacklist all individual keyboard-and-mouse (KBM)" \
             " devices." \
-          "" \
           "\t--blacklist-pci\t\tBlacklist all PCI device groups." \
-          "\n" \
-          "\t--blacklist-pnp\t\tBlacklist all individual PnP devices and controllers" \
+          "\n\t--blacklist-pnp\t\tBlacklist all individual PnP devices and controllers" \
             " (PCI devices)." \
-          "\n" \
           "\t--blacklist-non-kbm\tBlacklist all individual non-KBM devices." \
-          "\n" \
+          "\n"
+
+        printf "%s%s%s\n" \
           "\t-w|--whitelist MATCH\tWhitelist individual devices and/or PCI devices" \
             " manually." \
           ""\
@@ -689,15 +689,11 @@ function yes_no_prompt
             " four-character alphanumeric words; IOMMU groups are positive numbers." \
           "\n" \
           "\t--whitelist-all\t\tWhitelist all individual devices and PCI devices." \
-          "" \
-          "\t--whitelist-kbm\t\tWhitelist all individual keyboard-and-mouse (KBM)" \
+          "\n\t--whitelist-kbm\t\tWhitelist all individual keyboard-and-mouse (KBM)" \
             " devices." \
-          "" \
           "\t--whitelist-pci\t\tWhitelist all PCI device groups." \
-          "\n" \
-          "\t--whitelist-pnp\t\tWhitelist all individual PnP devices and controllers" \
+          "\n\t--whitelist-pnp\t\tWhitelist all individual PnP devices and controllers" \
             " (PCI devices)." \
-          "\n" \
           "\t--whitelist-non-kbm\tWhitelist all individual non-KBM devices." \
       )"
 
