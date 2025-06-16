@@ -6,7 +6,7 @@
 ### v1.1.0
 
 Allow or deny device(s) to wake-up a Linux machine from a suspended state.
-Limit wake-up to matched input devices (Power, USB, PCI, etc.).
+Limit wake-up to matched input devices (Power, PCI, Plug-and-Play (PnP), FireWire, USB, etc.).
 
 ## [💾 Download](#-2-download)
 
@@ -42,7 +42,9 @@ devices may wake-up the Host machine; *unlike in Microsoft Windows, there is no*
 **What does *ACPI Sleep* do?** A script to blacklist/whitelist specified devices
 and/or device groups from ACPI wake-up of the Host; *easily allow or deny mouse*
 *movement, key presses, controller input, etc. from disturbing the sleep of a*
-*Host machine.*
+*Host machine.* Devices include Plug-and-Play (PnP) devices
+(FireWire, USB, or anything hot-pluggable) and/or PCI devices
+(expansion cards, graphics, networking, USB controllers, etc.).
 
 ### ✅ 2. Requirements
 
@@ -50,6 +52,7 @@ and/or device groups from ACPI wake-up of the Host; *easily allow or deny mouse*
   - **Linux.**
   - ***BSD*** *is not supported*.
 
+- `lsusb` to parse USB PnP devices.
 - `systemd` for system services.
 
 ### 💾 3. Download
@@ -149,15 +152,16 @@ To open a CLI or Terminal:
   -s, --save              Save changes so they persist after restart of the Host
                           machine.
 
-  "-p, --pci STATUS       Get PCI devices and the status of each.
+  "--pci STATUS           Get PCI devices and the ACPI wake status of each.
                           STATUS is the state of matched devices. STATUS may be
-                          either "enabled", "disabled", or empty (for all).
+                          either "enabled", "disabled", or empty (match all).
 
-  "-u, --usb STATUS       Get USB devices and the status of each.
+  "--pnp STATUS           Get Plug-and-Play (PnP) and/or USB devices and the ACPI
+                          wake status of each.
                           STATUS is the state of matched devices. STATUS may be
-                          either "enabled", "disabled", or empty (for all).
+                          either "enabled", "disabled", or empty (match all).
 
-  -b, --blacklist MATCH   Blacklist individual devices and/or PCI devices
+  -b|--blacklist MATCH    Blacklist individual devices and/or PCI devices
                           manually.
                           MATCH is a comma delimited list of keywords, PCI device
                           IDs, and/or IOMMU groups (groups of PCI devices).
@@ -173,12 +177,12 @@ To open a CLI or Terminal:
 
   --blacklist-pci         Blacklist all PCI device groups.
 
-  --blacklist-usb         Blacklist all individual USB devices and USB PCI devices
-                          (USB controllers).
+  --blacklist-pnp         Whitelist all individual PnP devices and controllers
+                          (PCI devices).
 
   --blacklist-non-kbm     Blacklist all individual non-KBM devices.
 
-  -w, --whitelist MATCH   Whitelist individual devices and/or PCI devices
+  -w|--whitelist MATCH    Whitelist individual devices and/or PCI devices
                           manually.
                           MATCH is a comma delimited list of keywords, PCI device
                           IDs, and/or IOMMU groups (groups of PCI devices).
@@ -194,15 +198,15 @@ To open a CLI or Terminal:
 
   --whitelist-pci         Whitelist all PCI device groups.
 
-  --whitelist-usb         Whitelist all individual USB devices and USB PCI devices
-                          (USB controllers).
+  --whitelist-pnp         Whitelist all individual PnP devices and controllers
+                          (PCI devices).
 
   --whitelist-non-kbm     Whitelist all individual non-KBM devices.
 ```
 
 ### ⚠️ 5. Disclaimer
 
-Default behavior of a Host machine is to allow system wake-up by USB. Therefore,
+Default behavior of a Host machine is to allow system wake-up by PnP. Therefore,
 installing *ACPI Sleep* to enable wake-up of devices, *is not necessary.*
 
 **Should your system not have...**

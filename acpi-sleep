@@ -47,20 +47,26 @@ IFS=$'\n'
 
   DO_PERSIST_CHANGES=false
 
+  DO_PCI_MATCH=false
+  PCI_MATCH=""
+
+  DO_PNP_MATCH=false
+  PNP_MATCH=""
+
   BLACKLIST_MATCH=""
   DO_BLACKLIST_ALL_ANY=false
   DO_BLACKLIST_ALL_KBM=false
-  DO_BLACKLIST_ALL_PCI=false
-  DO_BLACKLIST_ALL_USB=false
   DO_BLACKLIST_ALL_NON_KBM=false
+  DO_BLACKLIST_ALL_PCI=false
+  DO_BLACKLIST_ALL_PNP=false
   DO_BLACKLIST_MATCH=false
 
   WHITELIST_MATCH=""
   DO_WHITELIST_ALL_ANY=false
   DO_WHITELIST_ALL_KBM=false
-  DO_WHITELIST_ALL_PCI=false
-  DO_WHITELIST_ALL_USB=false
   DO_WHITELIST_ALL_NON_KBM=false
+  DO_WHITELIST_ALL_PCI=false
+  DO_WHITELIST_ALL_PNP=false
   DO_WHITELIST_MATCH=false
 
   #endregion
@@ -133,6 +139,39 @@ function yes_no_prompt
   {
     if [[ "${1}" =~ "${REGEX_MATCH_PCI_ID}" ]]; then
       return 1
+    fi
+  }
+
+  #
+  # $?  : on success, return 0; on failure, return 1.
+  #
+  function does_match_status
+  {
+    match=""
+
+    case "${1,,}" in
+      "disable" | "disabled" )
+        match="disable"
+        ;;
+
+      "enable" | "enabled" )
+        match="enable"
+        ;;
+
+      "" )
+        ;;
+
+      * )
+        return 1
+        ;;
+    esac
+
+    if "${DO_PCI_MATCH}"; then
+      PCI_MATCH="${match}"
+    fi
+
+    if "${DO_PNP_MATCH}"; then
+      PNP_MATCH="${match}"
     fi
   }
 
@@ -464,6 +503,26 @@ function yes_no_prompt
   function get_option
   {
     while [[ "$1" =~ ^- && ! "$1" == "--" ]]; do case $1 in
+      "--pci" )
+        DO_PCI_MATCH=true
+        shift
+
+        if ! does_match_status "${1}"; then
+          echo -e "${PREFIX_ERROR} Invalid argument."
+          return 1
+        fi
+        ;;
+
+      "--pnp" )
+        DO_PNP_MATCH=true
+        shift
+
+        if ! does_match_status "${1}"; then
+          echo -e "${PREFIX_ERROR} Invalid argument."
+          return 1
+        fi
+        ;;
+
       "-s" | "--save" )
         DO_PERSIST_CHANGES=true
         ;;
@@ -500,8 +559,8 @@ function yes_no_prompt
         DO_BLACKLIST_ALL_PCI=true
         ;;
 
-      "--blacklist-usb" )
-        DO_BLACKLIST_ALL_USB=true
+      "--blacklist-pnp" )
+        DO_BLACKLIST_ALL_PNP=true
         ;;
 
       #endregion
@@ -538,8 +597,8 @@ function yes_no_prompt
         DO_WHITELIST_ALL_PCI=true
         ;;
 
-      "--whitelist-usb" )
-        DO_WHITELIST_ALL_USB=true
+      "--whitelist-pnp" )
+        DO_WHITELIST_ALL_PNP=true
         ;;
 
       #endregion
@@ -551,7 +610,7 @@ function yes_no_prompt
         return 1 ;;
 
       * )
-        echo -e "${PREFIX_ERROR} Invalid input."
+        echo -e "${PREFIX_ERROR} Invalid option."
         return 1 ;;
     esac; shift; done
 
@@ -570,7 +629,8 @@ function yes_no_prompt
       "\n" \
       \
       "  Allow or deny device(s) to wake-up a Linux machine from a suspended"\
-        " state. Limit wake-up to matched input devices (Power, USB, PCI, etc.)." \
+        " state. Limit wake-up to matched input devices"\
+        " (power, PCI, Plug-and-Play (PnP), FireWire, USB, etc.)." \
       "\n" \
       \
       "  Version ${SCRIPT_VERSION}." \
@@ -581,8 +641,24 @@ function yes_no_prompt
       "\n" \
       "\n" \
       \
+      "--pci MATCH\t\tGet PCI devices and the ACPI wake status of each." \
+      "\n\t\t\t"\
+      "STATUS is the state of matched devices. STATUS may be either \"enabled\","\
+       " \"disabled\", or empty (match all)."\
+      "\n" \
+      "\n" \
+      \
+      "--pnp MATCH\t\tGet Plug-and-Play (PnP) devices and the ACPI wake status"\
+        " of each." \
+      "\n\t\t\t"\
+      "STATUS is the state of matched devices. STATUS may be either \"enabled\","\
+       " \"disabled\", or empty (match all)."\
+      "\n" \
+      "\n" \
+      \
       "s, --save\t\tSave changes so they persist after restart of the Host"\
         " machine." \
+      "\n" \
       "\n" \
       \
       "-b, --blacklist MATCH\tBlacklist individual devices and/or PCI devices"\
@@ -608,8 +684,8 @@ function yes_no_prompt
       "\n" \
       "\n" \
       \
-      "-b, --blacklist-usb\tBlacklist all individual USB devices and USB PCI"\
-        " devices (USB controllers)." \
+      "-b, --blacklist-pnp\tBlacklist all individual PnP devices and controllers"\
+        "(PCI devices)." \
       "\n" \
       "\n" \
       \
@@ -640,8 +716,8 @@ function yes_no_prompt
       "\n" \
       "\n" \
       \
-      "-b, --whitelist-usb\tWhitelist all individual USB devices and USB PCI"\
-        " devices (USB controllers)." \
+      "-b, --whitelist-pnp\tWhitelist all individual PnP devices and controllers"\
+        "(PCI devices)." \
       "\n" \
       "\n" \
       \
