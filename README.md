@@ -149,6 +149,14 @@ To open a CLI or Terminal:
   -s, --save              Save changes so they persist after restart of the Host
                           machine.
 
+  "-p, --pci STATUS       Get PCI devices and the status of each.
+                          STATUS is the state of matched devices. STATUS may be
+                          either "enabled", "disabled", or empty (for all).
+
+  "-u, --usb STATUS       Get USB devices and the status of each.
+                          STATUS is the state of matched devices. STATUS may be
+                          either "enabled", "disabled", or empty (for all).
+
   -b, --blacklist MATCH   Blacklist individual devices and/or PCI devices
                           manually.
                           MATCH is a comma delimited list of keywords, PCI device
