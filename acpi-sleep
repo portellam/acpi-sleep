@@ -23,7 +23,7 @@ declare -r SCRIPT_NAME="$( basename "${0}" )"
 declare -r PREFIX_PROMPT="${SCRIPT_NAME}: "
 
 SAVEIFS="${IFS}"
-IFS=$'\n'
+IFS=$''
 
   #region Color coding
 
@@ -77,11 +77,17 @@ PATH_TO_FILE="/proc/acpi/wakeup"
 
 #region Logic
 
+#
+# $@  : the command line arguments.
+# $?  : on success, exit 0; on failure, exit non-zero.
+#
 function main
 {
-  is_user_superuser \
-    && parse_options \
-    && toggle_wakeup_for_all_interfaces
+  is_user_superuser
+
+  if ! set_options "$@"; then
+    print_usage
+  fi
 
   exit "${?}"
 }
@@ -625,105 +631,75 @@ function yes_no_prompt
   function print_usage
   {
     echo -e \
-      "Usage: sudo ${SCRIPT_NAME} [OPTION]..." \
-      "\n" \
-      \
-      "  Allow or deny device(s) to wake-up a Linux machine from a suspended"\
-        " state. Limit wake-up to matched input devices"\
-        " (power, PCI, Plug-and-Play (PnP), FireWire, USB, etc.)." \
-      "\n" \
-      \
-      "  Version ${SCRIPT_VERSION}." \
-      "\n" \
-      "\n" \
-      \
-      "    -h, --help\t\tPrint this help and exit." \
-      "\n" \
-      "\n" \
-      \
-      "--pci MATCH\t\tGet PCI devices and the ACPI wake status of each." \
-      "\n\t\t\t"\
-      "STATUS is the state of matched devices. STATUS may be either \"enabled\","\
-       " \"disabled\", or empty (match all)."\
-      "\n" \
-      "\n" \
-      \
-      "--pnp MATCH\t\tGet Plug-and-Play (PnP) devices and the ACPI wake status"\
-        " of each." \
-      "\n\t\t\t"\
-      "STATUS is the state of matched devices. STATUS may be either \"enabled\","\
-       " \"disabled\", or empty (match all)."\
-      "\n" \
-      "\n" \
-      \
-      "s, --save\t\tSave changes so they persist after restart of the Host"\
-        " machine." \
-      "\n" \
-      "\n" \
-      \
-      "-b, --blacklist MATCH\tBlacklist individual devices and/or PCI devices"\
-        " manually." \
-      "\n\t\t\t"\
-      "MATCH is a comma delimited list of keywords, PCI device IDs, and/or"\
-        "IOMMU groups (groups of PCI devices). Keywords include individual or"\
-        "PCI device names and types; PCI device IDs are colon delimited pairs of"\
-        "four-character alphanumeric words; IOMMU groups are positive numbers." \
-      "\n" \
-      "\n" \
-      \
-      "-b, --blacklist-all\tBlacklist all individual devices and PCI devices." \
-      "\n" \
-      "\n" \
-      \
-      "-b, --blacklist-kbm\tBlacklist all individual keyboard-and-mouse (KBM)"\
-        " devices." \
-      "\n" \
-      "\n" \
-      \
-      "-b, --blacklist-pci\tBlacklist all PCI device groups." \
-      "\n" \
-      "\n" \
-      \
-      "-b, --blacklist-pnp\tBlacklist all individual PnP devices and controllers"\
-        "(PCI devices)." \
-      "\n" \
-      "\n" \
-      \
-      "-b, --blacklist-non-kbm\tBlacklist all individual non-KBM devices." \
-      "\n" \
-      "\n" \
-      \
-      "-b, --whitelist MATCH\tWhitelist individual devices and/or PCI devices"\
-        " manually." \
-      "\n\t\t\t"\
-      "MATCH is a comma delimited list of keywords, PCI device IDs, and/or"\
-        "IOMMU groups (groups of PCI devices). Keywords include individual or"\
-        "PCI device names and types; PCI device IDs are colon delimited pairs of"\
-        "four-character alphanumeric words; IOMMU groups are positive numbers." \
-      "\n" \
-      "\n" \
-      \
-      "-b, --whitelist-all\tWhitelist all individual devices and PCI devices." \
-      "\n" \
-      "\n" \
-      \
-      "-b, --whitelist-kbm\tWhitelist all individual keyboard-and-mouse (KBM)"\
-        " devices." \
-      "\n" \
-      "\n" \
-      \
-      "-b, --whitelist-pci\tWhitelist all PCI device groups." \
-      "\n" \
-      "\n" \
-      \
-      "-b, --whitelist-pnp\tWhitelist all individual PnP devices and controllers"\
-        "(PCI devices)." \
-      "\n" \
-      "\n" \
-      \
-      "-b, --whitelist-non-kbm\tWhitelist all individual non-KBM devices." \
-      "\n" \
-      "\n" \
+      "$( \
+        printf "%s%s%s\n" \
+          "Usage: sudo ${SCRIPT_NAME} [OPTION]..." \
+          "\n" \
+          "Allow or deny device(s) to wake-up a Linux machine from a suspended" \
+            "state. Limit wake-up to matched input devices" \
+            "(power, PCI, Plug-and-Play (PnP), FireWire, USB, etc.)." \
+          "" \
+          "Version ${SCRIPT_VERSION}." \
+          "\n\n" \
+          "\t-h, --help\t\tPrint this help and exit." \
+          "\n" \
+          "\n" \
+          "\t--pci MATCH\t\tGet PCI devices and the ACPI wake status of each." \
+          "\t\t\t\t" \
+          "STATUS is the state of matched devices. STATUS may be either \"enabled\"," \
+          " \"disabled\", or empty (match all)." \
+          "\n" \
+          "\t--pnp MATCH\t\tGet Plug-and-Play (PnP) devices and the ACPI wake status" \
+            " of each." \
+          "\t\t\t\t" \
+          "STATUS is the state of matched devices. STATUS may be either \"enabled\"," \
+          " \"disabled\", or empty (match all)." \
+          "\n" \
+          "\t-s, --save\t\tSave changes so they persist after restart of the Host" \
+            " machine." \
+          "\n" \
+          "\t-b|--blacklist MATCH\tBlacklist individual devices and/or PCI devices" \
+            " manually." \
+          ""\
+          "\t\t\t\t" \
+          "MATCH is a comma delimited list of keywords, PCI device IDs, and/or" \
+            " IOMMU groups (groups of PCI devices). Keywords include individual or" \
+            " PCI device names and types; PCI device IDs are colon delimited pairs of" \
+            " four-character alphanumeric words; IOMMU groups are positive numbers." \
+          "\n" \
+          "\t--blacklist-all\t\tBlacklist all individual devices and PCI devices." \
+          "" \
+          "\t--blacklist-kbm\t\tBlacklist all individual keyboard-and-mouse (KBM)" \
+            " devices." \
+          "" \
+          "\t--blacklist-pci\t\tBlacklist all PCI device groups." \
+          "\n" \
+          "\t--blacklist-pnp\t\tBlacklist all individual PnP devices and controllers" \
+            " (PCI devices)." \
+          "\n" \
+          "\t--blacklist-non-kbm\tBlacklist all individual non-KBM devices." \
+          "\n" \
+          "\t-w|--whitelist MATCH\tWhitelist individual devices and/or PCI devices" \
+            " manually." \
+          ""\
+          "\t\t\t\t" \
+          "MATCH is a comma delimited list of keywords, PCI device IDs, and/or" \
+            " IOMMU groups (groups of PCI devices). Keywords include individual or" \
+            " PCI device names and types; PCI device IDs are colon delimited pairs of" \
+            " four-character alphanumeric words; IOMMU groups are positive numbers." \
+          "\n" \
+          "\t--whitelist-all\t\tWhitelist all individual devices and PCI devices." \
+          "" \
+          "\t--whitelist-kbm\t\tWhitelist all individual keyboard-and-mouse (KBM)" \
+            " devices." \
+          "" \
+          "\t--whitelist-pci\t\tWhitelist all PCI device groups." \
+          "\n" \
+          "\t--whitelist-pnp\t\tWhitelist all individual PnP devices and controllers" \
+            " (PCI devices)." \
+          "\n" \
+          "\t--whitelist-non-kbm\tWhitelist all individual non-KBM devices." \
+      )"
 
     exit 1
   }
