@@ -2,8 +2,8 @@
 
 # Filename:       acpi-sleep
 # Description:    Allow or deny device(s) to wake-up a Linux machine from a
-#                 suspended state. Limit wake-up to Power buttons and/or other
-#                 devices.
+#                 suspended state. Limit wake-up to matched input devices
+#                 (Power, USB, PCI, etc.).
 # Author(s):      Alex Portell <github.com/portellam>
 # Maintainer(s):  Alex Portell <github.com/portellam>
 # Version:        1.1.0
@@ -18,18 +18,29 @@ trap 'catch_exit' EXIT
 
 #region Parameters
 
-OPTIONS=( "$@" )
-
-declare -r SCRIPT_VERSION="1.0.0"
+declare -r SCRIPT_VERSION="1.1.0"
 declare -r SCRIPT_NAME="$( basename "${0}" )"
 declare -r PREFIX_PROMPT="${SCRIPT_NAME}: "
-declare -r PREFIX_ERROR="An error occurred:${RESET_COLOR} "
 
 SAVEIFS="${IFS}"
 IFS=$'\n'
 
-DO_DISABLE_INTERFACES=false
-DO_ENABLE_INTERFACES=false
+  #region Color coding
+
+  # Reference URL : 'https://www.shellhacks.com/bash-colors'
+  declare -r SET_COLOR_GREEN='\033[0;32m'
+  declare -r SET_COLOR_RED='\033[0;31m'
+  declare -r SET_COLOR_YELLOW='\033[0;33m'
+  declare -r RESET_COLOR='\033[0m'
+
+  #endregion
+
+  #region Toggles
+
+  DO_DISABLE_INTERFACES=false
+  DO_ENABLE_INTERFACES=false
+
+  #endregion
 
 PATH_TO_FILE="/proc/acpi/wakeup"
 
@@ -39,50 +50,11 @@ PATH_TO_FILE="/proc/acpi/wakeup"
 
 function main
 {
-  is_user_superuser && parse_options && toggle_wakeup_for_all_interfaces
+  is_user_superuser \
+    && parse_options \
+    && toggle_wakeup_for_all_interfaces
+
   exit "${?}"
-}
-
-  #region Clean-up
-
-  function reset_ifs
-  {
-    IFS="${SAVEIFS}"
-  }
-
-  #endregion
-
-  #region Data-type validation
-
-  function is_string
-  {
-    if [[ "${1}" == "" ]]; then
-      return 1
-    fi
-  }
-
-  #endregion
-
-  #region Handlers
-
-  function catch_error
-  {
-    exit 255
-  }
-
-  function catch_exit
-  {
-    reset_ifs
-  }
-
-  #endregion
-
-function is_user_superuser
-{
-  if [[ $( whoami ) != "root" ]]; then
-    print_to_error_log "User is not sudo or root."
-    return 1
-  fi
 }
 
 function yes_no_prompt
@@ -109,152 +81,574 @@ function yes_no_prompt
   return 1
 }
 
-  #region Loggers
+  #region Business logic
 
-  function print_to_error_log
+  #
+  # $?  : on success, return 0; on failure, exit 1.
+  #
+  function does_system_have_pci
   {
-    echo -e "${PREFIX_ERROR}${1}" >&2
+    if [[ "${#HWID_LIST[@]}" -eq 0 ]]; then
+      print_to_error_log "No PCI devices found."
+      exit 1
+    fi
   }
 
-  function print_to_output_log
+  #
+  # $?  : on success, return 0; on failure, exit 1.
+  #
+  function find_first_driver
   {
-    echo -e "${PREFIX_PROMPT}${1}" >&1
+    find_first_vga_driver && return 0
+    PREFER_LISTED_BRAND=false
+    print_to_error_log "Failed to find preferred GPU."
+    find_first_vga_driver && return 0
+    print_to_error_log "No GPUs found."
+    exit 1
+  }
+
+  #
+  # $?  : on success, return 0; on failure, return 1.
+  #
+  function find_first_vga_driver
+  {
+    for hwid in "${HWID_LIST[@]}"; do
+      driver=$( \
+        lspci -ks "${hwid}" \
+          | grep --extended-regexp 'driver' \
+          | cut --delimiter ':' --fields 2 \
+          | cut --delimiter ' ' --fields 2 \
+      )
+
+      type=$( \
+        lspci -ms "${hwid}" \
+          | cut --delimiter '"' --fields 2 \
+          | tr '[:upper:]' '[:lower:]' \
+      )
+
+      vendor=$( \
+        lspci -ms "${hwid}" \
+          | cut --delimiter '"' --fields 4 \
+          | tr '[:upper:]' '[:lower:]' \
+      )
+
+      function_id=$( \
+        echo "${hwid}" \
+          | cut --delimiter '.' --fields 2 \
+      )
+
+      pci_id=$( \
+        echo "${hwid}" \
+          | cut --delimiter '.' --fields 1 \
+      )
+
+      pci_id+=":${function_id}"
+
+      if match_valid_vga_device_with_driver "driver"; then
+        match_driver_and_set_xorg_write_only "${driver}"
+        return 0
+      fi
+    done
+
+    return 1
+  }
+
+  #
+  # $?  : on success, return 0; on failure, return 1.
+  #
+  function get_preferred_vendor
+  {
+    local -n reference="${1}"
+
+    case true in
+      "${PREFER_AMD}" )
+        reference=$( \
+          echo -e "${vendor}" \
+            | grep --ignore-case --invert-match 'amd|ati' \
+            | grep --ignore-case --invert-match 'corporation' \
+        ) ;;
+
+      "${PREFER_INTEL}" )
+        reference=$( \
+          echo -e "${vendor}" \
+            | grep --ignore-case 'intel' \
+        ) ;;
+
+      "${PREFER_NVIDIA}" )
+        reference=$( \
+          echo -e "${vendor}" \
+            | grep --ignore-case 'nvidia' \
+        ) ;;
+
+      "${PREFER_OFF_BRAND}" )
+        reference=$( \
+          echo -e "${vendor}" \
+          | grep \
+            --extended-regexp \
+            --ignore-case \
+            --invert-match \
+            'amd|ati|intel|nvidia' \
+      ) ;;
+
+      * )
+        print_to_error_log "Failed to match preferred vendor."
+        return 1 ;;
+    esac
+
+    if ! is_string "${reference}" &> /dev/null; then
+      return 1
+    fi
+  }
+
+  #
+  # $?  : on success, return 0; on failure, exit 1.
+  #
+  function is_file_deletable
+  {
+    if [[ -e "${PATH_1}" ]] \
+      && ! sudo rm --force "${FILE_1}" &> /dev/null; then
+      print_to_error_log "Failed to delete file '${FILE_1}'."
+      exit 1
+    fi
+  }
+
+  #
+  # $1  : the path name.
+  # $?  : if path found, return 0.
+  #
+  function is_path_found
+  {
+    if [[ ! -d "${PATH_1}" ]] \
+      && sudo mkdir --parents "${PATH_1}"; then
+      print_to_error_log "Failed to create directory '${PATH_1}'."
+      exit 1
+    fi
+  }
+
+  #
+  # $1  : the driver.
+  # $?  : always return 0.
+  #
+  function match_driver_and_set_xorg_write_only
+  {
+    local -r driver="${1}"
+
+    case "${driver}" in
+      *"nouveau"* )
+        MATCH_PROBLEM_DRIVER=true ;;
+    esac
+  }
+
+  #
+  # $?  : on success, return 0; on failure, return 1.
+  #
+  function match_valid_vga_device_with_driver
+  {
+    local -r found_no_driver="Found Driver: 'N/A'"
+
+    if ! is_string "${driver}" &> /dev/null \
+      || ! is_string "${type}" &> /dev/null \
+      || ! is_string "${vendor}" &> /dev/null; then
+      print_to_output_log "${found_no_driver}"
+      return 1
+    fi
+
+    if ! [[ "${type}" =~ ^"vga" ]] \
+      && ! [[ "${type}" =~ ^"graphics" ]]; then
+      print_to_output_log "Skipped non-GPU."
+      return 1
+    fi
+
+    if [[ "${driver}" =~ ^"vfio-pci" ]]; then
+      print_to_output_log "${found_no_driver}"
+      return 1
+    fi
+
+    if "${PREFER_LISTED_BRAND}"; then
+      local preferred_vendor=""
+      get_preferred_vendor "preferred_vendor"
+
+      if [[ "${preferred_vendor}" != "${vendor}" ]]; then
+        print_to_output_log "${found_no_driver}"
+        return 1
+      fi
+    fi
+
+    match_vendor_and_override_driver "${vendor}"
+    print_to_output_log "Found Driver: '${driver}'"
+  }
+
+  #
+  # $1  : the driver.
+  # $?  : always return 0.
+  #
+  function match_vendor_and_override_driver
+  {
+    local -r vendor="${1}"
+
+    case "${vendor}" in
+      *"intel"* )
+        override_intel_vga_driver "${driver}" ;;
+    esac
+  }
+
+  #
+  # $1  : the reference.
+  # $?  : always return 0.
+  #
+  function override_intel_vga_driver
+  {
+    local -n reference="${1}"
+    local -r override_driver="modesetting"
+
+    if "${HAS_MATCHED_INTEL_DRIVER}"; then
+      reference="${override_driver}"
+
+    else
+      print_to_output_log \
+        "Should given parsed Intel GPU driver be invalid, replace xorg.conf" \
+        "with an alternate intel driver (example: '${override_driver}')."
+    fi
+  }
+
+  #
+  # $?  : on success, return 0; on failure, exit 1.
+  #
+  function restart_service
+  {
+    if "${DO_RESTART_DISPLAY_MANAGER}" \
+      && ( \
+        ! sudo systemctl enable "${FILE_2}" \
+        || ! sudo systemctl restart "${FILE_2}" \
+      ); then
+      print_to_error_log "Failed to restart system service."
+      exit 1
+    fi
+
+    print_to_output_log "Restarted system service."
+  }
+
+  #
+  # $?  : on success, return 0; on failure, return 1.
+  #
+  function set_file
+  {
+    case "${?}" in
+      0 )
+        FILE_1_CONTENTS+=(
+          ""
+          "Section       \"Device\""
+          "  Identifier  \"Device0\""
+          "  Driver      \"${driver}\""
+          "  BusID       \"PCI:${pci_id}\""
+          "EndSection"
+        )
+
+        print_to_output_log "Valid GPU found."
+        ;;
+
+      * )
+        FILE_1_CONTENTS+=(
+          ""
+          "#Section       \"Device\""
+          "#  Identifier  \"Device0\""
+          "#  Driver      \"driver_name\""
+          "#  BusID       \"PCI:bus_id:slot_id:function_id\""
+          "#EndSection"
+        )
+
+        print_to_error_log "No valid GPU found."
+        ;;
+    esac
+
+    if ! echo -e "${FILE_1_CONTENTS[*]}" >> "${FILE_1}"; then
+      print_to_error_log "Failed to write to file '${FILE_1}'."
+      return 1
+    fi
+
+    print_to_output_log "Wrote to file '${FILE_1}'."
+  }
+
+  #
+  # $?  : always returns 0.
+  #
+  function toggle_sort_order_of_devices
+  {
+    if "${PARSE_PCI_ORDER_BY_BUS_ID}"; then
+      HWID_LIST=( $( eval "${GET_PCI_ID}" ) )
+
+    else
+      HWID_LIST=( $( eval "${GET_PCI_ID_REVERSE_SORT}" ) )
+    fi
+  }
+
+  #
+  # $?  : on failure, exit 1; on write failure, return 0.
+  #
+  function write_to_file
+  {
+    if [[ ! -d "${PATH_1}" ]]; then
+      echo -e "${PREFIX_ERROR} Failed to create directory '${PATH_1}'."
+      exit 1
+    fi
+
+    if ! "${MATCH_PROBLEM_DRIVER}"; then
+      set_file || exit "${?}"
+
+    else
+      print_to_output_log "Not writing to file given presence of problem driver."
+    fi
   }
 
   #endregion
 
   #region Options logic
 
+  #
+  # $1  : the option.
+  # $?  : on success, return 0; on failure, return 1.
+  #
   function get_option
   {
-    case "${1}" in
-      "-e" | "--enable" )
-        DO_ENABLE_INTERFACES=true
-        return 0 ;;
+    while [[ "$1" =~ ^- && ! "$1" == "--" ]]; do case $1 in
+      "-f" | "--first" )
+        PARSE_PCI_ORDER_BY_BUS_ID=true ;;
 
-      "-d" | "--disable" )
-        DO_DISABLE_INTERFACES=true
-        return 0 ;;
+      "-l" | "--last" )
+        PARSE_PCI_ORDER_BY_BUS_ID=false
+        print_to_output_log "Parsing GPUs in reverse order." ;;
+
+      "-r" | "--restart-display" )
+        DO_RESTART_DISPLAY_MANAGER=true ;;
+
+      "-a" | "--amd" )
+        if "${PREFER_LISTED_BRAND}"; then
+          return 1
+        fi
+
+        PREFER_AMD=true
+        PREFER_LISTED_BRAND=true ;;
+
+      "-i" | "--intel" )
+        if "${PREFER_LISTED_BRAND}"; then
+          return 1
+        fi
+
+        PREFER_INTEL=true
+        PREFER_LISTED_BRAND=true ;;
+
+      "-n" | "--nvidia" )
+        if "${PREFER_LISTED_BRAND}"; then
+          return 1
+        fi
+
+        PREFER_NVIDIA=true
+        PREFER_LISTED_BRAND=true ;;
+
+      "-o" | "--other" )
+        if "${PREFER_LISTED_BRAND}"; then
+          return 1
+        fi
+
+        PREFER_OFF_BRAND=true ;;
 
       "" )
-        return 0 ;;
+        ;;
 
-      "-h" | "--help" | * )
-        print_usage
+      "-h" | "--help" )
         return 1 ;;
-    esac
+
+      * )
+        echo -e "${PREFIX_ERROR} Invalid input."
+        return 1 ;;
+    esac; shift; done
+
+    if [[ "$1" == '--' ]]; then
+      shift
+    fi
   }
 
-  function parse_options
+  #
+  # $?  : always exits 1.
+  #
+  function print_usage
   {
-    if [[ "${#OPTIONS[@]}" -eq 0 ]]; then
-      prompt_option
-      return "${?}"
-    fi
+    echo -e \
+      "Usage: sudo ${SCRIPT_NAME} [OPTION]..." \
+      "\n" \
+      \
+      "  Allow or deny device(s) to wake-up a Linux machine from a suspended"\
+        " state. Limit wake-up to matched input devices (Power, USB, PCI, etc.)." \
+      "\n" \
+      \
+      "  Version ${SCRIPT_VERSION}." \
+      "\n" \
+      "\n" \
+      \
+      "    -h, --help\t\tPrint this help and exit." \
+      "\n" \
+      "\n" \
+      \
+      "s, --save\t\tSave changes so they persist after restart of the Host"\
+        " machine." \
+      "\n" \
+      \
+      "-b, --blacklist MATCH\tBlacklist individual devices and/or PCI devices"\
+        " manually." \
+      "\n\t\t\t"\
+      "MATCH is a comma delimited list of keywords, PCI device IDs, and/or"\
+        "IOMMU groups (groups of PCI devices). Keywords include individual or"\
+        "PCI device names and types; PCI device IDs are colon delimited pairs of"\
+        "four-character alphanumeric words; IOMMU groups are positive numbers." \
+      "\n" \
+      "\n" \
+      \
+      "-b, --blacklist-all\tBlacklist all individual devices and PCI devices." \
+      "\n" \
+      "\n" \
+      \
+      "-b, --blacklist-kbm\tBlacklist all individual keyboard-and-mouse (KBM)"\
+        " devices." \
+      "\n" \
+      "\n" \
+      \
+      "-b, --blacklist-pci\tBlacklist all PCI device groups." \
+      "\n" \
+      "\n" \
+      \
+      "-b, --blacklist-usb\tBlacklist all individual USB devices and USB PCI"\
+        " devices (USB controllers)." \
+      "\n" \
+      "\n" \
+      \
+      "-b, --blacklist-non-kbm\tBlacklist all individual non-KBM devices." \
+      "\n" \
+      "\n" \
+      \
+      "-b, --whitelist MATCH\tWhitelist individual devices and/or PCI devices"\
+        " manually." \
+      "\n\t\t\t"\
+      "MATCH is a comma delimited list of keywords, PCI device IDs, and/or"\
+        "IOMMU groups (groups of PCI devices). Keywords include individual or"\
+        "PCI device names and types; PCI device IDs are colon delimited pairs of"\
+        "four-character alphanumeric words; IOMMU groups are positive numbers." \
+      "\n" \
+      "\n" \
+      \
+      "-b, --whitelist-all\tWhitelist all individual devices and PCI devices." \
+      "\n" \
+      "\n" \
+      \
+      "-b, --whitelist-kbm\tWhitelist all individual keyboard-and-mouse (KBM)"\
+        " devices." \
+      "\n" \
+      "\n" \
+      \
+      "-b, --whitelist-pci\tWhitelist all PCI device groups." \
+      "\n" \
+      "\n" \
+      \
+      "-b, --whitelist-usb\tWhitelist all individual USB devices and USB PCI"\
+        " devices (USB controllers)." \
+      "\n" \
+      "\n" \
+      \
+      "-b, --whitelist-non-kbm\tWhitelist all individual non-KBM devices." \
+      "\n" \
+      "\n" \
 
-    for option in "${OPTIONS[@]}"; do
+    exit 1
+  }
+
+  #
+  # $?  : on success, return 0; on failure, return 1.
+  #
+  function set_options
+  {
+    for option in "$@"; do
+      is_string "${option}" &> /dev/null || return 0
       get_option "${option}" || return 1
     done
   }
 
-  function print_usage
+  #endregion
+
+  #region Clean-up
+
+  #
+  # $?  : always returns 0.
+  #
+  function reset_ifs
   {
-    local -ar output=(
-      "Usage:\tbash ${SCRIPT_NAME} [OPTION]"
-      "Toggle wakeup by ACPI of a Linux machine from USB device activity."
-      "Version ${SCRIPT_VERSION}.\n"
-      "  -d, --disable Disable wakeup by USB devices for this session only."
-      "  -e, --enable  Enable wakeup by USB devices for this session only."
-      "  -h, --help    Print this help and exit."
-    )
-
-    echo -e "${output[*]}"
-  }
-
-  function prompt_option
-  {
-    yes_no_prompt "Disable ACPI wakeup for USB interfaces?"
-
-    case "${?}" in
-      0 )
-        DO_DISABLE_INTERFACES=true ;;
-
-      255 )
-        DO_ENABLE_INTERFACES=true ;;
-
-      1 )
-        return 1
-    esac
-
-    return 0
+    IFS="${SAVEIFS}"
   }
 
   #endregion
 
-  #region Business logic
+  #region Data-type validation
 
-  function disable_wakeup_for_all_interfaces
+  #
+  # $1  : the string.
+  # $?  : if not empty string, return 0.
+  #
+  function is_string
   {
-    local -ar enabled_interfaces_list="$( cat "${PATH_TO_FILE}" | grep --ignore-case 'disabled' | grep --extended-regexp --ignore-case 'EHC|XHC' | awk '{print $1}' | sort --unique )"
-
-    if [[ "${#enabled_interfaces_list[@]}" -le 0 ]] \
-      || ( [[ "${#enabled_interfaces_list[@]}" -eq 1 ]] && [[ "${enabled_interfaces_list[@]}" == "" ]] ); then
-      print_to_output_log "No interfaces found."
-      return 0
-    fi
-
-    for line in "${enabled_interfaces_list[@]}"; do
-      is_string "${line}" || continue
-
-      if ! toggle_wakeup_for_this_interface "${line}"; then
-        print_to_error_log "Failed to disable wakeup for interface '${line}'."
-        return 1
-      fi
-
-      print_to_output_log "Disabled wakeup for interface '${line}'."
-    done
-  }
-
-  function enable_wakeup_for_all_interfaces
-  {
-    local -ar disabled_interfaces_list="$( cat "${PATH_TO_FILE}" | grep --ignore-case 'enabled' | grep --extended-regexp --ignore-case 'EHC|XHC' | awk '{print $1}' | sort --unique )"
-
-    if [[ "${#disabled_interfaces_list[@]}" -le 0 ]] \
-      || ( [[ "${#disabled_interfaces_list[@]}" -eq 1 ]] && [[ "${disabled_interfaces_list[@]}" == "" ]] ); then
-      print_to_output_log "No interfaces found."
-      return 0
-    fi
-
-    for line in "${disabled_interfaces_list[@]}"; do
-      is_string "${line}" || continue
-
-      if ! toggle_wakeup_for_this_interface "${line}"; then
-        print_to_error_log "Failed to enable wakeup for interface '${line}'."
-        return 1
-      fi
-
-      print_to_output_log "Enabled wakeup for interface '${line}'."
-    done
-  }
-
-  function toggle_wakeup_for_all_interfaces
-  {
-    if "${DO_DISABLE_INTERFACES}" \
-      && ! "${DO_ENABLE_INTERFACES}"; then
-      disable_wakeup_for_all_interfaces
-
-    elif "${DO_ENABLE_INTERFACES}" \
-      && ! "${DO_DISABLE_INTERFACES}"; then
-      enable_wakeup_for_all_interfaces
-
-    else
-      print_to_error_log "Invalid input."
+    if [[ "${1}" == "" ]]; then
+      return 1
     fi
   }
 
-  function toggle_wakeup_for_this_interface
+  #endregion
+
+  #region Handlers
+
+  #
+  # $?  : always exits non-zero.
+  #
+  function catch_error
   {
-    echo "${line}" > /proc/acpi/wakeup
+    exit 255
+  }
+
+  #
+  # $?  : always returns 0.
+  #
+  function catch_exit
+  {
+    reset_ifs
+  }
+
+  #
+  # $?  : if user is root, return 0.
+  #
+  function is_user_superuser
+  {
+    if [[ $( whoami ) != "root" ]]; then
+      print_to_error_log "User is not sudo or root."
+      return 1
+    fi
+  }
+
+  #endregion
+
+  #region Loggers
+
+  #
+  # $1  : the output.
+  # $?  : always returns 0.
+  #
+  function print_to_error_log
+  {
+    echo -e "${PREFIX_PROMPT}${PREFIX_ERROR}${*}" >&2
+  }
+
+  #
+  # $1  : the output.
+  # $?  : always returns 0.
+  #
+  function print_to_output_log
+  {
+    echo -e "${PREFIX_PROMPT}${*}" >&1
   }
 
   #endregion

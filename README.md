@@ -6,7 +6,7 @@
 ### v1.1.0
 
 Allow or deny device(s) to wake-up a Linux machine from a suspended state.
-Limit wake-up to Power buttons and/or other devices.
+Limit wake-up to matched input devices (Power, USB, PCI, etc.).
 
 ## [💾 Download](#-2-download)
 
