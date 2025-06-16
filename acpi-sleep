@@ -694,23 +694,24 @@ function yes_no_prompt
             " (PCI devices)." \
           "\t--blacklist-non-kbm\tBlacklist all individual non-KBM devices." \
           "\n"
+          
+print_this_usage \
+    "\t-w|--whitelist MATCH" \
+    "\t\t" \
+    "Whitelist individual PnP devices and/or PCI devices." \
+    "\n" \
+    "MATCH is a comma delimited list of keywords, PCI device IDs, and/or" \
+    "IOMMU groups (groups of PCI devices). Keywords include individual or" \
+    "PCI device names and types; PCI device IDs are colon delimited pairs of" \
+    "four (4) character alphanumeric words; IOMMU groups are positive numbers."
 
-        print_this_usage \
-          "\t-w|--whitelist MATCH" \
-          "\t\t" \
-          "Whitelist individual PnP devices and/or PCI devices" \
-          "\n" \
-          "MATCH is a comma delimited list of keywords, PCI device IDs, and/or" \
-          "IOMMU groups (groups of PCI devices). Keywords include individual or" \
-          "PCI device names and types; PCI device IDs are colon delimited pairs of" \
-          "four (4) character alphanumeric words; IOMMU groups are positive numbers."
+echo
 
-        echo
+print_this_usage \
+    "\t--whitelist-all" \
+    "\t\t\t\t" \
+    "Whitelist all individual PnP devices and PCI devices."
 
-        print_this_usage \
-          "\t--whitelist-all" \
-          "\t\t\t\t" \
-          "Whitelist all individual PnP devices and PCI devices."
 
         print_this_usage \
           "\t--whitelist-kbm" \
@@ -743,30 +744,27 @@ function yes_no_prompt
   # $@  : the option description.
   # $?  : always return .
   #
-  function print_this_usage
-  {
+function print_this_usage {
     local option_prefix="${1}"
     local option_tabspace="${2}"
     shift 2
 
-    output="$( \
-      echo -e "${option_prefix}${option_tabspace}"
-    )"
-
-    whitespace=$( \
-      printf \
-        '%*s' \
-        "${#output}" '' \
-    )
+    output="$(echo -e "${option_prefix}${option_tabspace}")"
+    local body_start=$(( ${#output} + 1 ))  # Position after the output
 
     echo -n "${output}"
 
-    printf "%s%s%s\n" \
-      "$( \
-        echo ${@} \
-          | sed "s/^/${whitespace}/"
-      )"
-  }
+    # Calculate the indent based on the position of the first character of the text body
+    local indent="$(printf '%*s' $body_start '' | tr ' ' ' ')"
+
+    for line in "$@"; do
+        # Print each line with the calculated indent
+        printf "%s\n" "$line" | sed "s/^/${indent}/"
+    done
+}
+
+
+
 
   #
   # $?  : on success, return 0; on failure, return 1.
