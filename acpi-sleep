@@ -35,10 +35,33 @@ IFS=$'\n'
 
   #endregion
 
+  #region Regex
+
+  REGEX_MATCH_IOMMU_GROUP='^[a-zA-Z]+(,[a-zA-Z]+)*$'
+  REGEX_MATCH_KEYWORD='^([1-9][0-9]*)(,[1-9][0-9]*)*$'
+  REGEX_MATCH_PCI_ID='^([a-zA-Z0-9]{4})(:[a-zA-Z0-9]{4})*$'
+
+  #endregion
+
   #region Toggles
 
-  DO_DISABLE_INTERFACES=false
-  DO_ENABLE_INTERFACES=false
+  DO_PERSIST_CHANGES=false
+
+  BLACKLIST_MATCH=""
+  DO_BLACKLIST_ALL_ANY=false
+  DO_BLACKLIST_ALL_KBM=false
+  DO_BLACKLIST_ALL_PCI=false
+  DO_BLACKLIST_ALL_USB=false
+  DO_BLACKLIST_ALL_NON_KBM=false
+  DO_BLACKLIST_MATCH=false
+
+  WHITELIST_MATCH=""
+  DO_WHITELIST_ALL_ANY=false
+  DO_WHITELIST_ALL_KBM=false
+  DO_WHITELIST_ALL_PCI=false
+  DO_WHITELIST_ALL_USB=false
+  DO_WHITELIST_ALL_NON_KBM=false
+  DO_WHITELIST_MATCH=false
 
   #endregion
 
@@ -82,6 +105,36 @@ function yes_no_prompt
 }
 
   #region Business logic
+
+  #
+  # $?  : on success, return 0; on failure, return 1.
+  #
+  function does_string_contain_iommu_group
+  {
+    if [[ "${1}" =~ "${REGEX_MATCH_IOMMU_GROUP}" ]]; then
+      return 1
+    fi
+  }
+
+  #
+  # $?  : on success, return 0; on failure, return 1.
+  #
+  function does_string_contain_keyword
+  {
+    if [[ "${1}" =~ "${REGEX_MATCH_KEYWORD}" ]]; then
+      return 1
+    fi
+  }
+
+  #
+  # $?  : on success, return 0; on failure, return 1.
+  #
+  function does_string_contain_pci_id
+  {
+    if [[ "${1}" =~ "${REGEX_MATCH_PCI_ID}" ]]; then
+      return 1
+    fi
+  }
 
   #
   # $?  : on success, return 0; on failure, exit 1.
@@ -411,46 +464,85 @@ function yes_no_prompt
   function get_option
   {
     while [[ "$1" =~ ^- && ! "$1" == "--" ]]; do case $1 in
-      "-f" | "--first" )
-        PARSE_PCI_ORDER_BY_BUS_ID=true ;;
+      "-s" | "--save" )
+        DO_PERSIST_CHANGES=true
+        ;;
 
-      "-l" | "--last" )
-        PARSE_PCI_ORDER_BY_BUS_ID=false
-        print_to_output_log "Parsing GPUs in reverse order." ;;
+      #region Blacklist
 
-      "-r" | "--restart-display" )
-        DO_RESTART_DISPLAY_MANAGER=true ;;
+      "--blacklist-all" )
+        DO_BLACKLIST_ALL_ANY=true
+        ;;
 
-      "-a" | "--amd" )
-        if "${PREFER_LISTED_BRAND}"; then
+      "--blacklist-kbm" )
+        DO_BLACKLIST_ALL_KBM=true
+        ;;
+
+      "--blacklist-match" )
+        DO_BLACKLIST_MATCH=true
+        shift
+
+        if ! does_string_contain_iommu_group "${1}" \
+          && ! does_string_contain_keyword "${1}" \
+          && ! does_string_contain_pci_id "${1}"; then
+          echo -e "${PREFIX_ERROR} Invalid argument."
           return 1
         fi
 
-        PREFER_AMD=true
-        PREFER_LISTED_BRAND=true ;;
+        BLACKLIST_MATCH="${1}"
+        ;;
 
-      "-i" | "--intel" )
-        if "${PREFER_LISTED_BRAND}"; then
+      "--blacklist-non-kbm" )
+        DO_BLACKLIST_ALL_NON_KBM=true
+        ;;
+
+      "--blacklist-pci" )
+        DO_BLACKLIST_ALL_PCI=true
+        ;;
+
+      "--blacklist-usb" )
+        DO_BLACKLIST_ALL_USB=true
+        ;;
+
+      #endregion
+
+      #region Whitelist
+
+      "--whitelist-all" )
+        DO_WHITELIST_ALL_ANY=true
+        ;;
+
+      "--whitelist-kbm" )
+        DO_WHITELIST_ALL_KBM=true
+        ;;
+
+      "--whitelist-match" )
+        DO_WHITELIST_MATCH=true
+        shift
+
+        if ! does_string_contain_iommu_group "${1}" \
+          && ! does_string_contain_keyword "${1}" \
+          && ! does_string_contain_pci_id "${1}"; then
+          echo -e "${PREFIX_ERROR} Invalid argument."
           return 1
         fi
 
-        PREFER_INTEL=true
-        PREFER_LISTED_BRAND=true ;;
+        WHITELIST_MATCH="${1}"
+        ;;
 
-      "-n" | "--nvidia" )
-        if "${PREFER_LISTED_BRAND}"; then
-          return 1
-        fi
+      "--whitelist-non-kbm" )
+        DO_WHITELIST_ALL_NON_KBM=true
+        ;;
 
-        PREFER_NVIDIA=true
-        PREFER_LISTED_BRAND=true ;;
+      "--whitelist-pci" )
+        DO_WHITELIST_ALL_PCI=true
+        ;;
 
-      "-o" | "--other" )
-        if "${PREFER_LISTED_BRAND}"; then
-          return 1
-        fi
+      "--whitelist-usb" )
+        DO_WHITELIST_ALL_USB=true
+        ;;
 
-        PREFER_OFF_BRAND=true ;;
+      #endregion
 
       "" )
         ;;
