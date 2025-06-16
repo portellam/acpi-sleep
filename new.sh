@@ -11,11 +11,13 @@ path="/proc/acpi/wakeup"
 echo -e \
   "$( head --lines 1 "${path}" )\t\tDescription"
 
-for line in \
-$( \
+mapfile -t lines < <\
+( \
   grep "pci:" "${path}" \
-    | tail -n +2\
-); do
+    | tail -n +2 \
+)
+
+for line in "${lines[@]}"; do
   pci="$( \
     echo "${line}" \
       | awk '{print $4}' \
@@ -33,5 +35,3 @@ $( \
 
   echo -e "${line}\t${description}"
 done
-
-echo
