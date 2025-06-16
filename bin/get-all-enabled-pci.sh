@@ -38,6 +38,8 @@ function get_pci_devices
       "${path}" \
     | grep \
       "${state}" \
+    | grep \
+      "pci" \
     | wc \
       --lines
   )"
@@ -71,7 +73,12 @@ function get_pci_devices
         'END {print $4}'
     )"
 
-    if [[ "${pci}" == "" ]]; then
+    if [[ "${pci}" == "" ]] \
+      || ! echo \
+        "${pci}" \
+      | grep \
+        "pci:" \
+      &> /dev/null; then
       continue
     fi
 
@@ -98,8 +105,6 @@ function get_pci_devices
       -e \
       "${message}"
   fi
-
-  echo
 }
 
 function get_usb_devices
@@ -109,12 +114,12 @@ function get_usb_devices
   if [[ "${state}" == "enabled" ]]; then
     echo \
       -e \
-      "List of USB devices which can wake the system:"
+      "List of USB devices which may wake the system:"
 
   elif [[ "${state}" == "disabled" ]]; then
     echo \
       -e \
-      "List of USB devices which cannot wake the system:"
+      "List of USB devices which may not wake the system:"
 
   else
     return 1
@@ -201,6 +206,7 @@ function get_usb_devices
       "\t${output}\n"
   done \
   | sort \
+    --unique \
     --version-sort
 
   if [[ "${#id_list[@]}" -eq 0 ]]; then
@@ -208,8 +214,6 @@ function get_usb_devices
       -e \
       "${message}"
   fi
-
-  echo
 }
 
 function disable_pci_device_state
@@ -250,8 +254,11 @@ function toggle_pci_device_state
 #region main
 
 get_pci_devices "enabled"
+echo
 get_usb_devices "enabled"
+echo
 get_pci_devices "disabled"
+echo
 get_usb_devices "disabled"
 
 #endregion
