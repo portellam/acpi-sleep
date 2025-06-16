@@ -630,34 +630,46 @@ function yes_no_prompt
   #
   function print_usage
   {
+    # tabs 2
+
     echo -e \
       "$( \
         printf "%s%s%s\n" \
-          "Usage: sudo ${SCRIPT_NAME} [OPTION]..." \
-          " " \
+          "Usage: sudo ${SCRIPT_NAME} [OPTION]..."
+
+        printf "%s%s%s\n" \
           "Allow or deny device(s) to wake-up a Linux machine from a suspended" \
             " state. Limit wake-up to matched input devices" \
-            " (power, PCI, Plug-and-Play (PnP), FireWire, USB, etc.)." \
-          "" \
+            " (power, PCI, Plug-and-Play (PnP), FireWire, USB, etc.)."
+
+        printf "%s%s%s\n" \
           "Version ${SCRIPT_VERSION}." \
-          "\n\n" \
+          "\n"
+
+        printf "%s%s%s\n" \
           "\t-h, --help\t\tPrint this help and exit." \
-          "\n" \
+          "\n"
+
+        printf "%s%s%s\n" \
           "\t--pci MATCH\t\tGet PCI devices and the ACPI wake status of each." \
           "" \
           "\t\t\t\t" \
           "STATUS is the state of matched devices. STATUS may be either \"enabled\"," \
           " \"disabled\", or empty (match all)." \
-          "\n" \
+          "\n"
+
+        printf "%s%s%s\n" \
           "\t--pnp MATCH\t\tGet Plug-and-Play (PnP) devices and the ACPI wake status" \
             " of each." \
           "\t\t\t\t" \
           "STATUS is the state of matched devices. STATUS may be either \"enabled\"," \
           " \"disabled\", or empty (match all)." \
-          "\n" \
+          "\n"
+
+        printf "%s%s%s\n" \
           "\t-s, --save\t\tSave changes so they persist after restart of the Host" \
             " machine." \
-          ""
+          "\n"
 
         printf "%s%s%s\n" \
           "\t-b|--blacklist MATCH\tBlacklist individual devices and/or PCI devices" \
@@ -668,7 +680,9 @@ function yes_no_prompt
             " IOMMU groups (groups of PCI devices). Keywords include individual or" \
             " PCI device names and types; PCI device IDs are colon delimited pairs of" \
             " four-character alphanumeric words; IOMMU groups are positive numbers." \
-          "\n" \
+          "\n"
+
+        printf "%s%s%s\n" \
           "\t--blacklist-all\t\tBlacklist all individual devices and PCI devices." \
           "\n\t--blacklist-kbm\t\tBlacklist all individual keyboard-and-mouse (KBM)" \
             " devices." \
@@ -687,7 +701,9 @@ function yes_no_prompt
             " IOMMU groups (groups of PCI devices). Keywords include individual or" \
             " PCI device names and types; PCI device IDs are colon delimited pairs of" \
             " four-character alphanumeric words; IOMMU groups are positive numbers." \
-          "\n" \
+          "\n"
+
+        printf "%s%s%s\n" \
           "\t--whitelist-all\t\tWhitelist all individual devices and PCI devices." \
           "\n\t--whitelist-kbm\t\tWhitelist all individual keyboard-and-mouse (KBM)" \
             " devices." \
@@ -697,6 +713,7 @@ function yes_no_prompt
           "\t--whitelist-non-kbm\tWhitelist all individual non-KBM devices." \
       )"
 
+    tabs -8
     exit 1
   }
 
