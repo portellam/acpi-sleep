@@ -630,7 +630,7 @@ function yes_no_prompt
   #
   function print_usage
   {
-    # tabs 2
+    tabs 2
 
     echo -e \
       "$( \
@@ -638,36 +638,39 @@ function yes_no_prompt
           "Usage: sudo ${SCRIPT_NAME} [OPTION]..."
 
         printf "%s%s%s\n" \
-          "Allow or deny device(s) to wake-up a Linux machine from a suspended" \
-            " state. Limit wake-up to matched input devices" \
-            " (power, PCI, Plug-and-Play (PnP), FireWire, USB, etc.)."
+          "$( \
+            echo \
+              "Allow or deny device(s) to wake-up a Linux machine from a suspended" \
+              "state. Limit wake-up to matched input devices" \
+              "(power, PCI, Plug-and-Play (PnP), FireWire, USB, etc.)."
+          )"
 
         printf "%s%s%s\n" \
-          "Version ${SCRIPT_VERSION}." \
+          "Version ${SCRIPT_VERSION}."
+
+        print_this_usage \
+          "\t-h, --help" \
+          "\t\t\t\t\t\t" \
+          "Print this help and exit."
+
+        printf "%s%s%s\n" \
+          "\t--pci MATCH\t\t\t\t\t\tGet PCI devices and the ACPI wake status of each." \
+          "\t\t\t\t\t\t\t\t\t\t\t\t" \
+          "STATUS is the state of matched devices. STATUS may be either \"enabled\"," \
+          " \"disabled\", or empty (match all)." \
           "\n"
 
         printf "%s%s%s\n" \
-          "\t-h, --help\t\tPrint this help and exit." \
-          "\n"
-
-        printf "%s%s%s\n" \
-          "\t--pci MATCH\t\tGet PCI devices and the ACPI wake status of each." \
+          "\t--pnp MATCH\t\t\t\t\t\tGet Plug-and-Play (PnP) devices and the ACPI" \
+            " wake status of each." \
           "" \
-          "\t\t\t\t" \
+          "\t\t\t\t\t\t\t\t\t\t\t\t" \
           "STATUS is the state of matched devices. STATUS may be either \"enabled\"," \
           " \"disabled\", or empty (match all)." \
-          "\n"
+          ""
 
         printf "%s%s%s\n" \
-          "\t--pnp MATCH\t\tGet Plug-and-Play (PnP) devices and the ACPI wake status" \
-            " of each." \
-          "\t\t\t\t" \
-          "STATUS is the state of matched devices. STATUS may be either \"enabled\"," \
-          " \"disabled\", or empty (match all)." \
-          "\n"
-
-        printf "%s%s%s\n" \
-          "\t-s, --save\t\tSave changes so they persist after restart of the Host" \
+          "\t-s, --save\t\t\t\t\t\tSave changes so they persist after restart of the Host" \
             " machine." \
           "\n"
 
@@ -692,29 +695,77 @@ function yes_no_prompt
           "\t--blacklist-non-kbm\tBlacklist all individual non-KBM devices." \
           "\n"
 
-        printf "%s%s%s\n" \
-          "\t-w|--whitelist MATCH\tWhitelist individual devices and/or PCI devices" \
-            " manually." \
-          ""\
-          "\t\t\t\t" \
+        print_this_usage \
+          "\t-w|--whitelist MATCH" \
+          "\t\t" \
+          "Whitelist individual PnP devices and/or PCI devices" \
+          "\n" \
           "MATCH is a comma delimited list of keywords, PCI device IDs, and/or" \
-            " IOMMU groups (groups of PCI devices). Keywords include individual or" \
-            " PCI device names and types; PCI device IDs are colon delimited pairs of" \
-            " four-character alphanumeric words; IOMMU groups are positive numbers." \
-          "\n"
+          "IOMMU groups (groups of PCI devices). Keywords include individual or" \
+          "PCI device names and types; PCI device IDs are colon delimited pairs of" \
+          "four (4) character alphanumeric words; IOMMU groups are positive numbers."
 
-        printf "%s%s%s\n" \
-          "\t--whitelist-all\t\tWhitelist all individual devices and PCI devices." \
-          "\n\t--whitelist-kbm\t\tWhitelist all individual keyboard-and-mouse (KBM)" \
-            " devices." \
-          "\t--whitelist-pci\t\tWhitelist all PCI device groups." \
-          "\n\t--whitelist-pnp\t\tWhitelist all individual PnP devices and controllers" \
-            " (PCI devices)." \
-          "\t--whitelist-non-kbm\tWhitelist all individual non-KBM devices." \
+        echo
+
+        print_this_usage \
+          "\t--whitelist-all" \
+          "\t\t\t\t" \
+          "Whitelist all individual PnP devices and PCI devices."
+
+        print_this_usage \
+          "\t--whitelist-kbm" \
+          "\t\t\t\t" \
+          "Whitelist all individual KBM PnP devices."
+
+        print_this_usage \
+          "\t--whitelist-pci" \
+          "\t\t\t\t" \
+          "Whitelist all individual PCI devices."
+
+        print_this_usage \
+          "\t--whitelist-pnp" \
+          "\t\t\t\t" \
+          "Whitelist all individual PnP devices and related parent PCI devices."
+
+        print_this_usage \
+          "\t--whitelist-non-kbm" \
+          "\t\t" \
+          "Whitelist all individual non-KBM PnP devices."
       )"
 
     tabs -8
     exit 1
+  }
+
+  #
+  # $1  : the option prefix.
+  # $2  : the option tab space.
+  # $@  : the option description.
+  # $?  : always return .
+  #
+  function print_this_usage
+  {
+    local option_prefix="${1}"
+    local option_tabspace="${2}"
+    shift 2
+
+    output="$( \
+      echo -e "${option_prefix}${option_tabspace}"
+    )"
+
+    whitespace=$( \
+      printf \
+        '%*s' \
+        "${#output}" '' \
+    )
+
+    echo -n "${output}"
+
+    printf "%s%s%s\n" \
+      "$( \
+        echo ${@} \
+          | sed "s/^/${whitespace}/"
+      )"
   }
 
   #
