@@ -649,8 +649,7 @@ function yes_no_prompt
           "Version ${SCRIPT_VERSION}."
 
         print_this_usage \
-          "\t-h, --help" \
-          "\t\t\t\t\t\t" \
+          "\t-h, --help\t\t\t\t\t\t" \
           "Print this help and exit."
 
         printf "%s%s%s\n" \
@@ -694,79 +693,113 @@ function yes_no_prompt
             " (PCI devices)." \
           "\t--blacklist-non-kbm\tBlacklist all individual non-KBM devices." \
           "\n"
-          
-print_this_usage \
-    "\t-w|--whitelist MATCH" \
-    "\t\t" \
-    "Whitelist individual PnP devices and/or PCI devices." \
-    "\n" \
-    "MATCH is a comma delimited list of keywords, PCI device IDs, and/or" \
-    "IOMMU groups (groups of PCI devices). Keywords include individual or" \
-    "PCI device names and types; PCI device IDs are colon delimited pairs of" \
-    "four (4) character alphanumeric words; IOMMU groups are positive numbers."
-
-echo
-
-print_this_usage \
-    "\t--whitelist-all" \
-    "\t\t\t\t" \
-    "Whitelist all individual PnP devices and PCI devices."
-
 
         print_this_usage \
-          "\t--whitelist-kbm" \
-          "\t\t\t\t" \
-          "Whitelist all individual KBM PnP devices."
+          "\t-w|--whitelist MATCH\t\t" \
+          "Whitelist individual PnP devices and/or PCI devices." \
+          "\n" \
+          "MATCH is a comma delimited list of keywords, PCI device IDs, and/or" \
+          "IOMMU groups (groups of PCI devices). Keywords include individual or" \
+          "PCI device names and types; PCI device IDs are colon delimited pairs of" \
+          "four (4) character alphanumeric words; IOMMU groups are positive numbers."
 
-        print_this_usage \
-          "\t--whitelist-pci" \
-          "\t\t\t\t" \
-          "Whitelist all individual PCI devices."
+        echo
 
-        print_this_usage \
-          "\t--whitelist-pnp" \
-          "\t\t\t\t" \
-          "Whitelist all individual PnP devices and related parent PCI devices."
+        # print_this_usage \
+        #   "\t--whitelist-all\t\t\t\t" \
+        #   "Whitelist all individual PnP devices and PCI devices."
 
-        print_this_usage \
-          "\t--whitelist-non-kbm" \
-          "\t\t" \
-          "Whitelist all individual non-KBM PnP devices."
+        # print_this_usage \
+        #   "\t--whitelist-kbm\t\t\t\t" \
+        #   "Whitelist all individual KBM PnP devices."
+
+        # print_this_usage \
+        #   "\t--whitelist-pci\t\t\t\t" \
+        #   "Whitelist all individual PCI devices."
+
+        # print_this_usage \
+        #   "\t--whitelist-pnp\t\t\t\t" \
+        #   "Whitelist all individual PnP devices and related parent PCI devices."
+
+        # print_this_usage \
+        #   "\t--whitelist-non-kbm\t\t" \
+        #   "Whitelist all individual non-KBM PnP devices."
       )"
+
+    echo
+    echo
+
+
+    # column --table <<< \
+    #   "  -w|--whitelist MATCH" \
+    #     "Whitelist individual PnP and/or PCI devices." \
+
+    tabs -8
+
+    format_lines \
+      "-w|--whitelist MATCH" \
+      "Whitelist individual PnP and/or PCI devices." \
+      "" \
+      "MATCH is a comma delimited list of keywords, PCI device IDs, and/or IOMMU groups (groups of PCI devices). Keywords include individual or PCI device names and types; PCI device IDs are colon delimited pairs of four (4) character alphanumeric words; IOMMU groups are positive numbers."
 
     tabs -8
     exit 1
   }
 
-  #
-  # $1  : the option prefix.
-  # $2  : the option tab space.
-  # $@  : the option description.
-  # $?  : always return .
-  #
-function print_this_usage {
-    local option_prefix="${1}"
-    local option_tabspace="${2}"
-    shift 2
+  function format_lines
+  {
+    local odd_lines=()
+    local even_lines=()
+    local prefix="$( echo -e "${1}\t\t" )"
+    local -i column_size="${#prefix}"
 
-    output="$(echo -e "${option_prefix}${option_tabspace}")"
-    local body_start=$(( ${#output} + 1 ))  # Position after the output
+    while [[ "${1}" != "" ]]; do
+      printf \
+        "%-${column_size}s" \
+        "${1}"
 
-    echo -n "${output}"
+      shift
+      echo
 
-    # Calculate the indent based on the position of the first character of the text body
-    local indent="$(printf '%*s' $body_start '' | tr ' ' ' ')"
+      echo "${1}" \
+        | fold \
+          --spaces \
+          --width $(( $(tput cols) - column_size )) \
+        | sed "s/^/$( \
+          printf '%*s' ${column_size} \
+        )/"
 
-    for line in "$@"; do
-        # Print each line with the calculated indent
-        printf "%s\n" "$line" | sed "s/^/${indent}/"
+      shift
     done
-}
-
-
-
+  }
 
   #
+  # $1  : the prefix.
+  # $@  : the description.
+  # $?  : always return 0.
+  #
+  function print_this_usage
+  {
+    local prefix="${1}"
+    shift 1
+
+    prefix="$( echo -e "${prefix}" )"
+    echo "${prefix}"
+
+    local -i key=1
+    while [[ "${1}" != "" ]]; do
+      columnize \
+        "${#prefix}" \
+        "${key}" \
+        "${1}"
+
+      shift 1
+      (( key++ ))
+    done
+  }
+
+  #
+  # $@  : options.
   # $?  : on success, return 0; on failure, return 1.
   #
   function set_options
